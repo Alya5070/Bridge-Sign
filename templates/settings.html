@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Malaysian Sign Language Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .navbar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .navbar-brand {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .navbar-item {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .navbar-item:hover {
+            background: #f0f0f0;
+        }
+
+        .navbar-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-left: 20px;
+            border-left: 2px solid #e0e0e0;
+        }
+
+        .user-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .settings-card {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .settings-card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-card p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .setting-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .setting-info p {
+            color: #666;
+            font-size: 0.9em;
+            margin: 0;
+        }
+
+        .setting-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-enabled {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-disabled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .form-select {
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-left: 15px;
+        }
+
+        .btn-toggle {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-toggle:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-change {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-change:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .camera-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .navbar-user {
+                border-left: none;
+                border-top: 2px solid #e0e0e0;
+                padding-left: 0;
+                padding-top: 15px;
+                justify-content: space-between;
+            }
+
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .camera-selector {
+                width: 100%;
+            }
+
+            .form-select {
+                flex: 1;
+            }
+
+            .form-button {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">🤟 MSL Detector</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item active">Settings</a>
+            <a href="{{ url_for('dataset_upload') }}" class="navbar-item">Dataset Upload</a>
+        </div>
+        <div class="navbar-user">
+            <div class="user-icon">{{ user.username[0].upper() }}</div>
+            <span>{{ user.username }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Settings</h1>
+            <p>Configure your camera and preferences</p>
+        </div>
+
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Camera Toggle -->
+            <div class="settings-card">
+                <h2>📹 Camera Control</h2>
+                <p>Enable or disable your camera for sign language detection</p>
+                
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>Camera Status</h3>
+                        <p>Turn your camera on or off</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span class="setting-status {% if user.camera_enabled %}status-enabled{% else %}status-disabled{% endif %}">
+                            {% if user.camera_enabled %}● Enabled{% else %}● Disabled{% endif %}
+                        </span>
+                        <form method="POST" action="{{ url_for('settings') }}" style="display: inline;">
+                            <input type="hidden" name="action" value="toggle_camera">
+                            <button type="submit" class="form-button btn-toggle">
+                                {% if user.camera_enabled %}Disable Camera{% else %}Enable Camera{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Selection -->
+            <div class="settings-card">
+                <h2>🎥 Camera Selection</h2>
+                <p>Choose which camera to use if you have multiple cameras</p>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>Active Camera</h3>
+                        <p>Currently using: {{ current_camera_label }}</p>
+                    </div>
+                    <form method="POST" action="{{ url_for('settings') }}" class="camera-selector">
+                        <input type="hidden" name="action" value="change_camera">
+                        <select name="camera_index" class="form-select" required>
+                            {% if available_cameras %}
+                                {% for cam in available_cameras %}
+                                    <option value="{{ cam.index }}" {% if cam.index == user.camera_index %}selected{% endif %}>
+                                        {{ cam.label }}
+                                    </option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="0">No cameras detected</option>
+                            {% endif %}
+                        </select>
+                        <button type="submit" class="form-button btn-change">Change Camera</button>
+                    </form>
+                </div>
+
+                {% if not available_cameras %}
+                <div style="background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                    ⚠️ No cameras detected. Please check your camera connections.
+                </div>
+                {% endif %}
+            </div>
+
+            <a href="{{ url_for('index') }}" class="back-link">← Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

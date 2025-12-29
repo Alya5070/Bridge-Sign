@@ -1,0 +1,31 @@
+# .gitignore for dataset folder
+# Ignore everything in this Data directory by default
+*
+
+# But keep this .gitignore file tracked
+!.gitignore
+
+# Optionally keep a README if present
+!README.md
+
+# Common large dataset/model file patterns (redundant because of '*', kept for clarity):
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.gif
+*.npy
+*.npz
+*.h5
+*.pth
+*.ckpt
+*.model
+
+# Python & editor artifacts
+__pycache__/
+*.pyc
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/

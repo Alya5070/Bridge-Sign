@@ -1,0 +1,9 @@
+make sure to sync the dependencies
+
+set pyton interpreter as 3.11
+
+app.py is the first version (i only trained A to C)
+
+app2.py is second version (i trained A to Z but its not very accurate because of the dataset (mine is kinda bad too but better than Kaggle))
+
+you can run app.py or app2.py straight away

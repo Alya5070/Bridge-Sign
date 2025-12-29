@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malaysian Sign Language Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .practice-module {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .practice-module h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .practice-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .practice-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            transition: border-color 0.3s;
+        }
+
+        .practice-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .practice-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-add {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-start:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-reset {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .letter-tiles {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            min-height: 100px;
+            align-items: center;
+        }
+
+        .letter-tile {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            font-weight: bold;
+            border-radius: 12px;
+            background: white;
+            border: 3px solid #e0e0e0;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .letter-tile.completed {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+            transform: scale(1.1);
+        }
+
+        .letter-tile.active {
+            border-color: #667eea;
+            border-width: 4px;
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+            }
+        }
+
+        .practice-status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .practice-status.waiting {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .practice-status.active {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .practice-status.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .video-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .prediction-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .prediction-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .prediction-card h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+
+        .prediction-display {
+            font-size: 5em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .confidence-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .confidence-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .confidence-bar {
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            color: #856404;
+        }
+
+        .instructions h4 {
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 968px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .prediction-display {
+                font-size: 4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Malaysian Sign Language Detector</h1>
+            <p>Real-time hand gesture recognition</p>
+        </div>
+
+        <div class="content">
+            <!-- Practice Module -->
+            <div class="practice-module">
+                <h2>Practice Mode</h2>
+                <div class="practice-controls">
+                    <input
+                        type="text"
+                        id="practice-input"
+                        class="practice-input"
+                        placeholder="Enter a word (e.g., HELLO)"
+                        maxlength="20"
+                    >
+                    <button class="practice-btn btn-add" onclick="addWord()">Add</button>
+                    <button class="practice-btn btn-start" id="start-btn" onclick="startPractice()" disabled>Start</button>
+                    <button class="practice-btn btn-reset" onclick="resetPractice()">Reset</button>
+                </div>
+                <div class="letter-tiles" id="letter-tiles">
+                    <p style="color: #999;">Enter a word and click "Add" to begin</p>
+                </div>
+                <div class="practice-status waiting" id="practice-status" style="display: none;">
+                    Ready to start! Click "Start" when you're ready.
+                </div>
+            </div>
+
+            <div class="video-section">
+                <div class="video-container">
+                    <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+                    <!--<div class="status-badge">LIVE</div>-->
+                </div>
+
+                <div class="instructions">
+                    <h4>📋 Instructions:</h4>
+                    <ul>
+                        <li>Position your hand clearly in front of the camera</li>
+                        <li>Ensure good lighting for better detection</li>
+                        <li>Make clear sign language gestures</li>
+                        <li>The prediction updates in real-time</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="prediction-section">
+                <div class="prediction-card">
+                    <h2>Current Prediction</h2>
+                    <div class="prediction-display" id="prediction">-</div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Confidence Levels</h3>
+                    <div class="confidence-bars" id="confidence-bars">
+                        <p style="text-align: center; color: #999;">Waiting for detection...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let practiceWord = '';
+        let currentLetterIndex = 0;
+        let practiceActive = false;
+        let matchedCount = 0;
+        const MATCH_THRESHOLD = 3; // Number of consecutive matches needed
+
+        // Generate A-Z labels
+        const labels = Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i));
+
+        // Add word function
+        async function addWord() {
+            const input = document.getElementById('practice-input');
+            const word = input.value.trim().toUpperCase();
+
+            if (!word) {
+                alert('Please enter a word!');
+                return;
+            }
+
+            // Validate that all letters are in the labels (A-Z)
+            const validLetters = word.split('').every(letter => {
+                return labels.includes(letter);
+            });
+
+            if (!validLetters) {
+                alert('Word contains letters not in the available sign language set! Only A-Z letters are supported.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/set_practice_word', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ word: word })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    practiceWord = word;
+                    currentLetterIndex = 0;
+                    matchedCount = 0;
+                    renderLetterTiles();
+                    document.getElementById('start-btn').disabled = false;
+                    document.getElementById('practice-status').style.display = 'block';
+                    document.getElementById('practice-status').className = 'practice-status waiting';
+                    document.getElementById('practice-status').textContent = `Ready to start! Click "Start" when you're ready.`;
+                }
+            } catch (error) {
+                console.error('Error adding word:', error);
+            }
+        }
+
+        // Start practice function
+        async function startPractice() {
+            if (!practiceWord) {
+                alert('Please add a word first!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/start_practice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    practiceActive = true;
+                    currentLetterIndex = 0;
+                    matchedCount = 0;
+                    renderLetterTiles();
+                    document.getElementById('start-btn').disabled = true;
+                    document.getElementById('practice-status').className = 'practice-status active';
+                    document.getElementById('practice-status').textContent = `Show sign for: ${practiceWord[currentLetterIndex]}`;
+                }
+            } catch (error) {
+                console.error('Error starting practice:', error);
+            }
+        }
+
+        // Reset practice function
+        async function resetPractice() {
+            try {
+                const response = await fetch('/reset_practice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    practiceWord = '';
+                    currentLetterIndex = 0;
+                    practiceActive = false;
+                    matchedCount = 0;
+                    document.getElementById('practice-input').value = '';
+                    document.getElementById('letter-tiles').innerHTML = '<p style="color: #999;">Enter a word and click "Add" to begin</p>';
+                    document.getElementById('start-btn').disabled = true;
+                    document.getElementById('practice-status').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error resetting practice:', error);
+            }
+        }
+
+        // Render letter tiles
+        function renderLetterTiles() {
+            const tilesContainer = document.getElementById('letter-tiles');
+            if (!practiceWord) {
+                tilesContainer.innerHTML = '<p style="color: #999;">Enter a word and click "Add" to begin</p>';
+                return;
+            }
+
+            tilesContainer.innerHTML = practiceWord.split('').map((letter, index) => {
+                let className = 'letter-tile';
+                if (index < currentLetterIndex) {
+                    className += ' completed';
+                } else if (index === currentLetterIndex && practiceActive) {
+                    className += ' active';
+                }
+                return `<div class="${className}">${letter}</div>`;
+            }).join('');
+        }
+
+        // Advance to next letter
+        async function advanceToNextLetter() {
+            if (currentLetterIndex < practiceWord.length - 1) {
+                currentLetterIndex++;
+                matchedCount = 0;
+
+                await fetch('/advance_letter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                renderLetterTiles();
+                document.getElementById('practice-status').textContent = `Show sign for: ${practiceWord[currentLetterIndex]}`;
+            } else {
+                // Completed the word!
+                practiceActive = false;
+                currentLetterIndex++;
+                renderLetterTiles();
+                document.getElementById('practice-status').className = 'practice-status completed';
+                document.getElementById('practice-status').textContent = '🎉 Congratulations! You completed the word!';
+                document.getElementById('start-btn').disabled = false;
+            }
+        }
+
+        // Allow Enter key to submit
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('practice-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addWord();
+                }
+            });
+        });
+
+        // Update prediction every 500ms
+        setInterval(async () => {
+            try {
+                const response = await fetch('/get_prediction');
+                const data = await response.json();
+
+                // Update prediction text
+                const predictionElement = document.getElementById('prediction');
+                predictionElement.textContent = data.prediction || '-';
+
+                // Update confidence bars
+                if (data.confidence && data.confidence.length > 0) {
+                    const confidenceBars = document.getElementById('confidence-bars');
+
+                    // Sort confidence scores with labels for display
+                    const confidenceData = labels.map((label, idx) => ({
+                        label,
+                        confidence: data.confidence[idx] || 0
+                    })).sort((a, b) => b.confidence - a.confidence).slice(0, 5); // Show top 5
+
+                    confidenceBars.innerHTML = confidenceData.map(item => {
+                        const percentage = (item.confidence * 100).toFixed(1);
+                        return `
+                            <div class="confidence-item">
+                                <div class="confidence-label">
+                                    <span>${item.label}</span>
+                                    <span>${percentage}%</span>
+                                </div>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${percentage}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // Handle practice mode
+                if (practiceActive && data.prediction === practiceWord[currentLetterIndex]) {
+                    matchedCount++;
+                    if (matchedCount >= MATCH_THRESHOLD) {
+                        await advanceToNextLetter();
+                    }
+                } else {
+                    matchedCount = 0;
+                }
+            } catch (error) {
+                console.error('Error fetching prediction:', error);
+            }
+        }, 500);
+    </script>
+</body>
+</html>
