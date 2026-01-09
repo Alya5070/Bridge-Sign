@@ -1,0 +1,21 @@
+<nav class="navbar">
+    <div class="navbar-brand">MSL Detector</div>
+    <div class="navbar-menu">
+        {% for link in nav_links %}
+            <a href="{{ url_for(link.endpoint) }}"
+               class="navbar-item {% if request.endpoint == link.endpoint %}active{% endif %}">
+                {{ link.label }}
+            </a>
+        {% endfor %}
+    </div>
+    <div class="navbar-user">
+        {% set display_name = session.get('username', '') %}
+        <div class="user-icon">{{ display_name[:1].upper() if display_name else '?' }}</div>
+        <span>{{ display_name if display_name else 'User' }}</span>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+</nav>
+<div class="version-strip" style="display:flex;flex-wrap:wrap;gap:14px;padding:6px 20px;background:transparent;color:#ffffff;font-size:0.85em;">
+    <span><strong>Dynamic:</strong> v{{ latest_model_meta.dynamic.version }}{% if latest_model_meta.dynamic.notes %} — {{ latest_model_meta.dynamic.notes }}{% endif %}</span>
+    <span><strong>Spelling:</strong> v{{ latest_model_meta.spelling.version }}{% if latest_model_meta.spelling.notes %} — {{ latest_model_meta.spelling.notes }}{% endif %}</span>
+</div>

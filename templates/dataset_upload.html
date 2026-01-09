@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dataset Upload - Malaysian Sign Language Detector</title>
     <style>
+        html { font-size: 80%; }
+
         * {
             margin: 0;
             padding: 0;
@@ -222,21 +224,9 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-brand">dYY MSL Detector</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item">Settings</a>
-            <a href="{{ url_for('dataset_upload') }}" class="navbar-item active">Dataset Upload</a>
-        </div>
-        <div class="navbar-user">
-            {% set display_name = session.get('username', '') %}
-            <div class="user-icon">{{ display_name[:1].upper() if display_name else '?' }}</div>
-            <span>{{ display_name if display_name else 'User' }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
+    {% include "_navbar.html" %}
+
+
 
     <div class="page-wrap">
         <div class="card">
@@ -257,17 +247,17 @@
                     <input type="text" id="word" name="word" placeholder="EAT" required>
                 </div>
                 <div>
-                    <label for="video">Video file</label>
-                    <input type="file" id="video" name="video" accept=".mp4,.mov,.avi,.mkv,.webm" required>
+                    <label for="videos">Video file(s)</label>
+                    <input type="file" id="videos" name="videos" accept=".mp4,.mov,.avi,.mkv,.webm" multiple required>
                 </div>
                 <div class="row">
                     <div>
                         <label for="sample_fps">Sample FPS</label>
-                        <input type="number" id="sample_fps" name="sample_fps" value="10" min="1">
+                        <input type="number" id="sample_fps" name="sample_fps" value="60" min="1">
                     </div>
                     <div>
-                        <label for="max_frames">Max frames (0 = no limit)</label>
-                        <input type="number" id="max_frames" name="max_frames" value="0" min="0">
+                        <label for="target_frames">Target images (0 = auto)</label>
+                        <input type="number" id="target_frames" name="target_frames" value="100" min="0">
                     </div>
                 </div>
                 <div class="checkboxes">
@@ -277,9 +267,11 @@
                 <button type="submit">Upload and Extract</button>
             </form>
 
-            {% if meta %}
-                <div class="path">Saved under: {{ sample_dir }}</div>
-                <div class="meta">{{ meta | tojson(indent=2) }}</div>
+            {% if results %}
+                {% for item in results %}
+                    <div class="path">Saved {{ item.filename }} under: {{ item.sample_dir }}</div>
+                    <div class="meta">{{ item.meta | tojson(indent=2) }}</div>
+                {% endfor %}
             {% endif %}
         </div>
     </div>

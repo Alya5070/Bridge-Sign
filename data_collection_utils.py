@@ -60,12 +60,22 @@ def process_hand_to_white(
     offset: int,
     img_size: int,
     extra_ratio: float = 0.35,
+    hands: list[dict] | None = None,
+    use_largest_only: bool = True,
 ) -> tuple[np.ndarray | None, bool]:
-    hands, _ = detector.findHands(frame_bgr, draw=False)
+    if hands is None:
+        hands, _ = detector.findHands(frame_bgr, draw=False)
     if not hands:
         return None, False
 
-    x1, y1, x2, y2 = expand_hand_bbox(hands, frame_bgr.shape, offset, extra_ratio)
+    if use_largest_only:
+        largest = max(hands, key=lambda h: h["bbox"][2] * h["bbox"][3])
+        chosen_hands = [largest]
+    else:
+        chosen_hands = hands
+
+    x1, y1, x2, y2 = expand_hand_bbox(chosen_hands, frame_bgr.shape, offset, extra_ratio)
+
     img_crop = frame_bgr[y1:y2, x1:x2]
     if img_crop.size == 0:
         return None, False
@@ -102,10 +112,11 @@ def extract_frames_from_video(
     offset: int,
     img_size: int,
     sample_fps: int = 10,
-    max_frames: int = 0,
+    target_frames: int = 0,
     save_raw: bool = True,
     save_processed: bool = True,
     extra_ratio: float = 0.35,
+    target_img_size: int = 224,
 ):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -124,8 +135,11 @@ def extract_frames_from_video(
     saved_raw = 0
     saved_proc = 0
     skipped = 0
+    target_frames = max(0, int(target_frames))
 
     frame_idx = 0
+    last_raw_frame = None
+    last_proc_frame = None
     while True:
         ok, frame = cap.read()
         if not ok:
@@ -137,26 +151,51 @@ def extract_frames_from_video(
             frame_idx += 1
             continue
 
+        hands, _ = detector.findHands(frame, draw=False)
+
         frame_name = f"frame_{saved_raw + 1:06d}.jpg"
 
-        if save_raw:
-            cv2.imwrite(os.path.join(raw_dir, frame_name), frame)
+        img_white, detected = process_hand_to_white(
+            frame, detector, offset, target_img_size, extra_ratio, hands=hands, use_largest_only=True
+        )
+
+        if save_raw and detected and img_white is not None:
+            cv2.imwrite(os.path.join(raw_dir, frame_name), img_white)
             saved_raw += 1
+            last_raw_frame = img_white
 
         if save_processed:
-            img_white, detected = process_hand_to_white(
-                frame, detector, offset, img_size, extra_ratio
-            )
             if detected and img_white is not None:
                 cv2.imwrite(os.path.join(proc_dir, frame_name), img_white)
                 saved_proc += 1
+                last_proc_frame = img_white
             else:
                 skipped += 1
 
         frame_idx += 1
 
-        if max_frames and saved_raw >= max_frames:
-            break
+        if target_frames:
+            raw_done = (not save_raw) or (saved_raw >= target_frames)
+            proc_done = (not save_processed) or (saved_proc >= target_frames)
+            if raw_done and proc_done:
+                break
+
+    # Top up to the requested target using the last available frame to allow repeats.
+    if target_frames > 0:
+        if save_raw and last_raw_frame is not None:
+            while saved_raw < target_frames:
+                saved_raw += 1
+                frame_name = f"frame_{saved_raw:06d}.jpg"
+                cv2.imwrite(os.path.join(raw_dir, frame_name), last_raw_frame)
+        if save_processed:
+            source_proc_frame = last_proc_frame if last_proc_frame is not None else last_raw_frame
+            if source_proc_frame is not None:
+                if source_proc_frame.shape[0] != target_img_size or source_proc_frame.shape[1] != target_img_size:
+                    source_proc_frame = cv2.resize(source_proc_frame, (target_img_size, target_img_size))
+                while saved_proc < target_frames:
+                    saved_proc += 1
+                    frame_name = f"frame_{saved_proc:06d}.jpg"
+                    cv2.imwrite(os.path.join(proc_dir, frame_name), source_proc_frame)
 
     cap.release()
 
@@ -169,8 +208,10 @@ def extract_frames_from_video(
         "raw_frames_saved": int(saved_raw),
         "processed_frames_saved": int(saved_proc),
         "processed_frames_skipped_no_hand": int(skipped),
-        "imgSize": int(img_size),
+        "imgSize": int(target_img_size),
         "offset": int(offset),
+        "target_frames_requested": int(target_frames),
+        "target_img_size": int(target_img_size),
         "created_at": datetime.now().isoformat(),
     }
 

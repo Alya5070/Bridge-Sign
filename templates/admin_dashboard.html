@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Update Model</title>
     <style>
+        html { font-size: 80%; }
+
         * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -136,29 +138,29 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-brand">🤟 MSL Detector</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item">Settings</a>
-            <a href="{{ url_for('dataset_upload') }}" class="navbar-item">Dataset Upload</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item active">Admin</a>
-        </div>
-        <div class="navbar-user">
-            <div class="user-icon">{{ username[0].upper() if username else 'A' }}</div>
-            <span>{{ username or 'Admin' }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
+    {% include '_navbar.html' %}
 
-    <div class="container">
+<div class="container">
         <h1>Update Model</h1>
         <p class="subtle">Upload a new Keras model (.h5) and matching labels (.txt). Existing files are backed up to <code>Model/Backup Model/</code> with a timestamp.</p>
         <p class="subtle">
-            Current versions — Dynamic: <strong>{{ current_versions.dynamic }}</strong>,
+            Current versions ??" Dynamic: <strong>{{ current_versions.dynamic }}</strong>,
             Spelling: <strong>{{ current_versions.spelling }}</strong>
         </p>
+
+        <div class="settings-card" style="margin-bottom: 20px;">
+            <h2>Dataset Upload Visibility</h2>
+            <p class="subtle">Control whether the dataset upload page is visible to users.</p>
+            <form method="POST" action="{{ url_for('admin_dashboard') }}">
+                <input type="hidden" name="action" value="toggle_dataset_visibility">
+                <label style="display:flex;align-items:center;gap:10px;">
+                    <input type="checkbox" name="dataset_visible" {% if dataset_visible %}checked{% endif %}>
+                    Enable Dataset Upload for non-admin users
+                </label>
+                <p class="note">Admins always see the link.</p>
+                <button type="submit" class="btn-primary" style="margin-top:10px;">Save Visibility</button>
+            </form>
+        </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}

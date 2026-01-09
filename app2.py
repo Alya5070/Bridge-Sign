@@ -6,6 +6,7 @@ import math
 from functools import wraps
 from typing import Optional
 import os
+import sys
 import platform
 import sqlite3
 import subprocess
@@ -35,28 +36,96 @@ from data_collection_utils import (
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DYNAMIC_MODEL_PATH = os.path.join(BASE_DIR, "Model", "dynamic_model.h5")
 DYNAMIC_LABELS_PATH = os.path.join(BASE_DIR, "Model", "dynamic_labels.txt")
-SPELLING_MODEL_PATH = os.path.join(BASE_DIR, "Model", "AtoZ.h5")
+SPELLING_MODEL_PATH = os.path.join(BASE_DIR, "Model", "Static.h5")
 SPELLING_LABELS_PATH = os.path.join(BASE_DIR, "Model", "labels.txt")
 WORDS_TABLE_NAME = "msl_words"
 MODEL_BACKUP_DIR = os.path.join(BASE_DIR, "Model", "Backup Model")
 ALLOWED_MODEL_EXT = {"h5"}
 ALLOWED_LABEL_EXT = {"txt"}
+PROJECT_VENV_PY = os.path.join(BASE_DIR, ".venv1", "Scripts", "python.exe")
+FEATURE_FLAG_DATASET_UPLOAD = "dataset_upload_visible"
+FEATURE_FLAG_DEFAULTS = {FEATURE_FLAG_DATASET_UPLOAD: False}
 SUPABASE_DB_URL = os.environ.get(
     "SUPABASE_DB_URL",
     "",  # Set in environment when available
 )
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    """
+    Read a boolean-like environment variable safely.
+    Treats 1/true/yes/on (case-insensitive) as True; everything else is False.
+    """
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Force SQLite-first behavior unless the flag is explicitly enabled.
+USE_SUPABASE_ONLY = _env_flag("USE_SUPABASE_ONLY", False)
+
+# Ensure the project virtual environment is used even if invoked via another Python.
+if os.path.exists(PROJECT_VENV_PY):
+    current_python = os.path.realpath(sys.executable)
+    target_python = os.path.realpath(PROJECT_VENV_PY)
+    if current_python != target_python and not os.environ.get("MSL_USE_PROJECT_VENV"):
+        os.environ["MSL_USE_PROJECT_VENV"] = "1"
+        os.execv(target_python, [target_python] + sys.argv)
+
+
+def _load_model_safe(model_path: str):
+    """
+    Load a keras model, retrying with a compat InputLayer if batch_shape
+    appears in the config (common across TF/Keras version mismatches), and
+    mapping DTypePolicy for newer saved models.
+    """
+    custom_objects = {
+        # Newer Keras saves policy objects that older TF doesn't know.
+        "DTypePolicy": tf.keras.mixed_precision.Policy,
+    }
+
+    def _try_load(extra_custom=None, safe_mode=True):
+        objs = {**custom_objects, **(extra_custom or {})}
+        # Provide both plain and fully-qualified keys to maximize override hit.
+        objs.setdefault("keras.layers.InputLayer", objs.get("InputLayer"))
+        return tf.keras.models.load_model(model_path, custom_objects=objs, compile=False, safe_mode=safe_mode)
+
+    # First attempt: normal load with custom dtype policy.
+    try:
+        return _try_load()
+    except Exception as exc_first:
+        # If batch_shape or InputLayer config issues, try the compat InputLayer.
+        class InputLayerCompat(tf.keras.layers.InputLayer):
+            @classmethod
+            def from_config(cls, config):
+                if "batch_shape" in config and "batch_input_shape" not in config:
+                    config["batch_input_shape"] = config.pop("batch_shape")
+                return super().from_config(config)
+
+        try:
+            return _try_load({"InputLayer": InputLayerCompat})
+        except Exception as exc_second:
+            # Last resort: disable safe_mode to bypass strict checks.
+            try:
+                return _try_load({"InputLayer": InputLayerCompat}, safe_mode=False)
+            except Exception:
+                # Re-raise original for clearer error context.
+                raise exc_first
 
 def get_supabase_connection():
     """Return a psycopg2 connection to Supabase, or None if unavailable."""
     if not SUPABASE_DB_URL or psycopg2 is None:
         return None
     try:
-        return psycopg2.connect(
+        conn = psycopg2.connect(
             SUPABASE_DB_URL,
             cursor_factory=RealDictCursor,
             connect_timeout=5,
             sslmode="require",
         )
+        conn.autocommit = False
+        return conn
     except Exception:
         return None
 
@@ -64,6 +133,51 @@ def get_supabase_connection():
 def _get_supabase_connection():
     """Backward-compatible alias used by older helper functions."""
     return get_supabase_connection()
+
+
+def _convert_qmarks_to_pg(sql: str) -> str:
+    # Simple conversion of sqlite-style ? placeholders to %s for psycopg2.
+    return sql.replace("?", "%s")
+
+
+class SupabaseCursorProxy:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def fetchone(self):
+        return self.cursor.fetchone()
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+
+
+class SupabaseConnectionProxy:
+    """
+    Minimal sqlite-like facade over psycopg2 connection so existing code paths
+    can keep using conn.execute(...).
+    """
+    def __init__(self, conn):
+        self.conn = conn
+        self.row_factory = None  # ignored, for API compatibility
+
+    def execute(self, sql: str, params: tuple | list = ()):
+        cur = self.conn.cursor()
+        sql_pg = _convert_qmarks_to_pg(sql)
+        cur.execute(sql_pg, params or ())
+        return SupabaseCursorProxy(cur)
+
+    def commit(self):
+        try:
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
+
+    def close(self):
+        try:
+            self.conn.close()
+        except Exception:
+            pass
 
 
 def ensure_supabase_extensions(cur) -> None:
@@ -205,39 +319,60 @@ def supabase_upsert_admin(username: str, password_hash: str) -> None:
             pass
 
 
-def supabase_upsert_hand_sign_stat(user_id: int, letter: str) -> None:
-    """Mirror hand_sign_stats to Supabase (user_id stored as text)."""
-    conn = _get_supabase_connection()
+def ensure_supabase_extensions(cur) -> None:
+    """Ensure required extensions exist on Supabase."""
+    cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+
+
+def supabase_log_model_version(
+    model_type: str,
+    version: str,
+    notes: str,
+    model_filename: str,
+    labels_filename: str,
+    backup_path: str,
+    uploaded_by: str,
+) -> None:
+    """Record model metadata to Supabase (best-effort)."""
+    conn = get_supabase_connection()
     if not conn:
         return
     try:
         with conn:
             with conn.cursor() as cur:
+                ensure_supabase_extensions(cur)
                 cur.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS public.hand_sign_stats_app (
-                        id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-                        user_id text NOT NULL,
-                        letter text NOT NULL,
-                        practice_count int4 NOT NULL DEFAULT 0,
+                    CREATE TABLE IF NOT EXISTS public.model_versions (
+                        id uuid NOT NULL DEFAULT uuid_generate_v4(),
+                        model_type text NOT NULL,
+                        version text NOT NULL,
+                        notes text NOT NULL,
+                        model_filename text NOT NULL,
+                        labels_filename text NOT NULL,
+                        backup_path text,
+                        uploaded_by text,
                         created_at timestamptz NOT NULL DEFAULT now(),
-                        updated_at timestamptz NOT NULL DEFAULT now(),
-                        UNIQUE(user_id, letter)
+                        CONSTRAINT model_versions_pkey PRIMARY KEY (id)
                     );
                     """
                 )
                 cur.execute(
                     """
-                    INSERT INTO public.hand_sign_stats_app (user_id, letter, practice_count)
-                    VALUES (%s, %s, 1)
-                    ON CONFLICT (user_id, letter)
-                    DO UPDATE SET practice_count = hand_sign_stats_app.practice_count + 1,
-                                  updated_at = now();
+                    INSERT INTO public.model_versions
+                        (model_type, version, notes, model_filename, labels_filename, backup_path, uploaded_by)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s);
                     """,
-                    (str(user_id), letter),
-        )
-    except Exception:
-        pass
+                    (
+                        model_type,
+                        version,
+                        notes,
+                        model_filename,
+                        labels_filename,
+                        backup_path,
+                        uploaded_by,
+                    ),
+                )
     finally:
         try:
             conn.close()
@@ -245,22 +380,27 @@ def supabase_upsert_hand_sign_stat(user_id: int, letter: str) -> None:
             pass
 
 
-def supabase_increment_practice_time(user_id: int, duration_seconds: int) -> None:
-    """Mirror practice time to Supabase (user_id stored as text)."""
-    if duration_seconds <= 0:
-        return
-    conn = _get_supabase_connection()
+def supabase_upsert_admin(username: str, password_hash: str) -> None:
+    """Ensure the admin user exists in Supabase."""
+    conn = get_supabase_connection()
     if not conn:
         return
     try:
         with conn:
             with conn.cursor() as cur:
+                ensure_supabase_extensions(cur)
                 cur.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS public.practice_time_app (
-                        user_id text PRIMARY KEY,
-                        practice_time_seconds int4 NOT NULL DEFAULT 0,
-                        updated_at timestamptz NOT NULL DEFAULT now()
+                    CREATE TABLE IF NOT EXISTS public.app_users (
+                        id uuid NOT NULL DEFAULT uuid_generate_v4(),
+                        username text NOT NULL UNIQUE,
+                        password_hash text,
+                        camera_enabled boolean NOT NULL DEFAULT true,
+                        camera_index integer NOT NULL DEFAULT 0,
+                        practice_time_seconds integer NOT NULL DEFAULT 0,
+                        is_admin boolean NOT NULL DEFAULT false,
+                        migrated_at timestamptz NOT NULL DEFAULT now(),
+                        CONSTRAINT app_users_pkey PRIMARY KEY (id)
                     );
                     """
                 )
@@ -269,16 +409,16 @@ def supabase_increment_practice_time(user_id: int, duration_seconds: int) -> Non
                 )
                 cur.execute(
                     """
-                    INSERT INTO public.practice_time_app (user_id, practice_time_seconds)
-                    VALUES (%s, %s)
-                    ON CONFLICT (user_id)
-                    DO UPDATE SET practice_time_seconds = practice_time_app.practice_time_seconds + EXCLUDED.practice_time_seconds,
-                                  updated_at = now();
+                    INSERT INTO public.app_users
+                        (username, password_hash, camera_enabled, camera_index, practice_time_seconds, is_admin)
+                    VALUES (%s, %s, true, 0, 0, true)
+                    ON CONFLICT (username) DO UPDATE SET
+                        password_hash = EXCLUDED.password_hash,
+                        is_admin = true,
+                        migrated_at = now();
                     """,
-                    (str(user_id), duration_seconds),
+                    (username, password_hash),
                 )
-    except Exception:
-        pass
     finally:
         try:
             conn.close()
@@ -342,9 +482,16 @@ BASE_DATASET_DIR = os.path.join(BASE_DIR, "dataset")
 BASE_UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 ALLOWED_VIDEO_EXT = {"mp4", "mov", "avi", "mkv", "webm"}
 HAND_CONTEXT_RATIO = 0.35
+HAND_CONTEXT_RATIO_DYNAMIC = HAND_CONTEXT_RATIO
+HAND_CONTEXT_RATIO_SPELLING = 0.18
 USE_LEGACY_SPELLING_PREPROCESS = True  # Enable legacy spelling crop/pad while keeping model compatibility.
 LEGACY_SPELLING_IMG_SIZE = 300  # Legacy canvas size; will be resized down to the model input.
 LEGACY_SPELLING_NORMALIZE = True  # Set False to send raw uint8 values to the model.
+SPELLING_SMOOTH_WINDOW = 7
+SPELLING_CONFIDENCE_THRESHOLD_DEFAULT = 0.45  # Base avg prob threshold before emitting a letter.
+SPELLING_CONFIDENCE_THRESHOLD_CONFUSED = 0.6  # Stricter threshold for visually similar letters.
+SPELLING_CONFUSED_LABELS = {"V", "W", "U", "G", "Q"}
+SPELLING_CONFUSED_GAP = 0.08  # Require margin over runner-up for confused letters.
 
 
 def init_db() -> None:
@@ -391,9 +538,19 @@ def init_db() -> None:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feature_flag (
+            key TEXT PRIMARY KEY,
+            enabled INTEGER NOT NULL
+        )
+        """
+    )
     existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(user)").fetchall()}
     if "practice_time_seconds" not in existing_columns:
         conn.execute("ALTER TABLE user ADD COLUMN practice_time_seconds INTEGER NOT NULL DEFAULT 0")
+    if "is_admin" not in existing_columns:
+        conn.execute("ALTER TABLE user ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0")
     conn.commit()
     conn.close()
 
@@ -431,6 +588,47 @@ init_db()
 ensure_admin_user()
 
 
+def init_feature_flags() -> None:
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        for key, default in FEATURE_FLAG_DEFAULTS.items():
+            row = conn.execute("SELECT enabled FROM feature_flag WHERE key = ?", (key,)).fetchone()
+            if row is None:
+                conn.execute(
+                    "INSERT INTO feature_flag (key, enabled) VALUES (?, ?)",
+                    (key, 1 if default else 0),
+                )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_feature_flag(key: str, default: bool = False) -> bool:
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        row = conn.execute("SELECT enabled FROM feature_flag WHERE key = ?", (key,)).fetchone()
+        if row is None:
+            return default
+        return bool(row[0])
+    finally:
+        conn.close()
+
+
+def set_feature_flag(key: str, enabled: bool) -> None:
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        conn.execute(
+            "INSERT INTO feature_flag (key, enabled) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET enabled=excluded.enabled",
+            (key, 1 if enabled else 0),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+init_feature_flags()
+
+
 def get_hand_sign_words() -> list[dict]:
     """
     Fetch the list of supported hand-sign words.
@@ -465,7 +663,11 @@ def tokenize_phrase_chunks(phrase: str) -> list[tuple[str, str]]:
     return tokens
 
 
-def get_db_connection() -> sqlite3.Connection:
+def get_db_connection():
+    if USE_SUPABASE_ONLY and SUPABASE_DB_URL:
+        pg_conn = get_supabase_connection()
+        if pg_conn:
+            return SupabaseConnectionProxy(pg_conn)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -518,6 +720,31 @@ def username_exists(username: str, exclude_uid: Optional[int] = None) -> bool:
 
 def create_user(username: str, password: str) -> int:
     hashed = generate_password_hash(password)
+    if USE_SUPABASE_ONLY:
+        pg_conn = get_supabase_connection()
+        if not pg_conn:
+            raise RuntimeError("Supabase connection unavailable.")
+        try:
+            with pg_conn:
+                with pg_conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        INSERT INTO app_users (username, password_hash, camera_enabled, camera_index, is_admin)
+                        VALUES (%s, %s, true, 0, false)
+                        ON CONFLICT (username) DO NOTHING
+                        RETURNING id
+                        """,
+                        (username, hashed),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        raise ValueError("Username already exists.")
+                    return row[0] if not isinstance(row, dict) else row.get("id")
+        finally:
+            try:
+                pg_conn.close()
+            except Exception:
+                pass
     conn = get_db_connection()
     user_id = None
     try:
@@ -586,11 +813,15 @@ def sync_supabase_user(user_id: int, sync_practice_time: bool = True) -> Optiona
     if not SUPABASE_DB_URL:
         return None
 
+    if USE_SUPABASE_ONLY:
+        # Already operating on Supabase; nothing to sync back.
+        return None
+
     user_row = get_user_record(user_id)
     if not user_row:
         return None
 
-    supabase_user_id = user_row["supabase_user_id"]
+    supabase_user_id = user_row["supabase_user_id"] if "supabase_user_id" in user_row.keys() else None
     include_practice_time = sync_practice_time or not supabase_user_id
 
     pg_conn = _get_supabase_connection()
@@ -717,8 +948,6 @@ def increment_practice_time(user_id: int, duration_seconds: int) -> None:
     )
     conn.commit()
     conn.close()
-    # Mirror to Supabase when available
-    supabase_increment_practice_time(user_id, duration_seconds)
 
 
 def increment_hand_sign_count(user_id: int, letter: str) -> None:
@@ -738,8 +967,6 @@ def increment_hand_sign_count(user_id: int, letter: str) -> None:
     )
     conn.commit()
     conn.close()
-    # Mirror to Supabase when available
-    supabase_upsert_hand_sign_stat(user_id, normalized)
 
 
 def get_top_users(limit: int = 5) -> list[dict]:
@@ -826,6 +1053,34 @@ def get_current_model_versions() -> dict:
     return versions
 
 
+def get_latest_model_meta() -> dict:
+    """
+    Return latest version and notes for dynamic and spelling models.
+    """
+    meta = {
+        "dynamic": {"version": "not set", "notes": ""},
+        "spelling": {"version": "not set", "notes": ""},
+    }
+    try:
+        conn = get_db_connection()
+        for model_type in ("dynamic", "spelling"):
+            row = conn.execute(
+                "SELECT version, notes FROM model_versions WHERE model_type = ? ORDER BY id DESC LIMIT 1",
+                (model_type,),
+            ).fetchone()
+            if row:
+                meta[model_type]["version"] = row["version"] or "not set"
+                meta[model_type]["notes"] = row["notes"] or ""
+    except sqlite3.Error:
+        pass
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+    return meta
+
+
 def list_model_backups() -> dict:
     """
     Return available backups for each model type.
@@ -845,10 +1100,61 @@ def list_model_backups() -> dict:
         entry = {"name": name}
         if {"dynamic_model.h5", "dynamic_labels.txt"}.issubset(files):
             dynamic_backups.append(entry)
-        if {"atoz.h5", "labels.txt"}.issubset(files):
+        spelling_h5_candidates = {"atoz.h5", "static.h5"}
+        if files.intersection(spelling_h5_candidates) and "labels.txt" in files:
             spelling_backups.append(entry)
 
     return {"dynamic": dynamic_backups, "spelling": spelling_backups}
+
+
+def infer_backup_model_type(backup_name: str) -> Optional[str]:
+    """Infer whether a backup folder contains a dynamic or spelling model."""
+    if not backup_name:
+        return None
+    backup_dir = os.path.join(MODEL_BACKUP_DIR, backup_name)
+    if not os.path.isdir(backup_dir):
+        return None
+    files = {f.lower() for f in os.listdir(backup_dir)}
+    has_dynamic = {"dynamic_model.h5", "dynamic_labels.txt"}.issubset(files)
+    spelling_h5_candidates = {"atoz.h5", "static.h5"}
+    has_spelling = bool(files.intersection(spelling_h5_candidates) and "labels.txt" in files)
+    if has_dynamic and not has_spelling:
+        return "dynamic"
+    if has_spelling and not has_dynamic:
+        return "spelling"
+    return None
+
+
+def restore_model_from_backup(model_type: str, backup_name: str) -> None:
+    """
+    Restore the requested model/labels from a backup folder.
+
+    Uses copy to preserve the backup; raises if any required file is missing.
+    """
+    backup_dir = os.path.join(MODEL_BACKUP_DIR, backup_name)
+    if not os.path.isdir(backup_dir):
+        raise FileNotFoundError(f"Backup folder not found: {backup_name}")
+
+    model_path, labels_path = resolve_model_paths(model_type)
+    required_files = {
+        os.path.join(backup_dir, os.path.basename(model_path)),
+        os.path.join(backup_dir, os.path.basename(labels_path)),
+    }
+    missing = [p for p in required_files if not os.path.isfile(p)]
+    if missing:
+        raise FileNotFoundError(f"Backup is missing files: {', '.join(os.path.basename(m) for m in missing)}")
+
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+
+    def _safe_restore(src: str, dest: str) -> None:
+        tmp_dest = f"{dest}.restore_tmp"
+        if os.path.exists(tmp_dest):
+            os.remove(tmp_dest)
+        shutil.copy2(src, tmp_dest)
+        os.replace(tmp_dest, dest)
+
+    _safe_restore(os.path.join(backup_dir, os.path.basename(model_path)), model_path)
+    _safe_restore(os.path.join(backup_dir, os.path.basename(labels_path)), labels_path)
 
 
 def has_allowed_extension(filename: str, allowed_ext: set[str]) -> bool:
@@ -864,7 +1170,7 @@ def resolve_model_paths(model_type: str) -> tuple[str, str]:
 def backup_existing_model_files(model_type: str) -> str:
     """Backup current model and labels into a timestamped folder; returns backup path."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_dir = os.path.join(MODEL_BACKUP_DIR, timestamp)
+    backup_dir = os.path.join(MODEL_BACKUP_DIR, f"{timestamp}_{model_type}")
     os.makedirs(backup_dir, exist_ok=True)
     model_path, labels_path = resolve_model_paths(model_type)
     for src in (model_path, labels_path):
@@ -880,13 +1186,13 @@ def reload_model_from_disk(model_type: str) -> None:
     global spelling_img_size, spelling_channels, imgSize, sequence_buffer
 
     if model_type == "dynamic":
-        dynamic_model = tf.keras.models.load_model(DYNAMIC_MODEL_PATH)
+        dynamic_model = _load_model_safe(DYNAMIC_MODEL_PATH)
         dynamic_labels = _load_labels(DYNAMIC_LABELS_PATH) or ["UNKNOWN"]
         dynamic_sequence_len, dynamic_img_size, dynamic_channels = _get_model_shape(dynamic_model, imgSize)
         imgSize = dynamic_img_size
         sequence_buffer = deque(maxlen=dynamic_sequence_len or 30)
     else:
-        spelling_model = tf.keras.models.load_model(SPELLING_MODEL_PATH)
+        spelling_model = _load_model_safe(SPELLING_MODEL_PATH)
         spelling_labels = _load_labels(SPELLING_LABELS_PATH) or ["UNKNOWN"]
         _, spelling_img_size, spelling_channels = _get_model_shape(spelling_model, imgSize)
 
@@ -898,6 +1204,34 @@ def save_uploaded_model_files(model_type: str, model_file, labels_file) -> tuple
     model_file.save(model_path)
     labels_file.save(labels_path)
     return model_path, labels_path
+
+
+def dataset_upload_enabled_for_current_user() -> bool:
+    if session.get("is_admin"):
+        return True
+    return get_feature_flag(FEATURE_FLAG_DATASET_UPLOAD, False)
+
+
+def build_nav_links() -> list[dict]:
+    links = [
+        {"endpoint": "index", "label": "Dashboard"},
+        {"endpoint": "profile", "label": "Profile"},
+        {"endpoint": "settings", "label": "Settings"},
+    ]
+    if dataset_upload_enabled_for_current_user():
+        links.append({"endpoint": "dataset_upload", "label": "Dataset Upload"})
+    if session.get("is_admin"):
+        links.append({"endpoint": "admin_dashboard", "label": "Admin"})
+    return links
+
+
+@app.context_processor
+def inject_nav_links():
+    return {
+        "nav_links": build_nav_links(),
+        "dataset_upload_enabled": dataset_upload_enabled_for_current_user(),
+        "latest_model_meta": get_latest_model_meta(),
+    }
 
 
 def detect_windows_camera_names() -> list[str]:
@@ -920,6 +1254,9 @@ def detect_windows_camera_names() -> list[str]:
         return []
 
     return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
+camera_cache: dict = {"ts": 0.0, "data": []}
 
 
 def open_camera(index: int) -> tuple[Optional[cv2.VideoCapture], Optional[int]]:
@@ -950,7 +1287,10 @@ def open_camera(index: int) -> tuple[Optional[cv2.VideoCapture], Optional[int]]:
     return cap, chosen_backend
 
 
-def get_camera_options(max_devices: int = 5) -> list[dict]:
+def get_camera_options(max_devices: int = 3) -> list[dict]:
+    now = time.time()
+    if camera_cache.get("data") and now - camera_cache.get("ts", 0) < 10:
+        return camera_cache["data"]
     friendly_names = detect_windows_camera_names()
     cameras: list[dict] = []
     for idx in range(max_devices):
@@ -959,6 +1299,8 @@ def get_camera_options(max_devices: int = 5) -> list[dict]:
             label = friendly_names[idx] if idx < len(friendly_names) else f"Camera {idx}"
             cameras.append({"index": idx, "label": label})
             cap.release()
+    camera_cache["data"] = cameras
+    camera_cache["ts"] = now
     return cameras
 
 
@@ -993,8 +1335,8 @@ def find_first_working_camera(max_devices: int = 5, min_mean: float = 1.0) -> tu
 
 # Initialize detector and model
 detector = HandDetector(maxHands=2)
-dynamic_model = tf.keras.models.load_model(DYNAMIC_MODEL_PATH)
-spelling_model = tf.keras.models.load_model(SPELLING_MODEL_PATH)
+dynamic_model = _load_model_safe(DYNAMIC_MODEL_PATH)
+spelling_model = _load_model_safe(SPELLING_MODEL_PATH)
 
 def _normalize_label_line(line: str) -> str:
     stripped = line.strip()
@@ -1054,6 +1396,7 @@ _, spelling_img_size, spelling_channels = _get_model_shape(spelling_model, imgSi
 imgSize = dynamic_img_size
 
 sequence_buffer = deque(maxlen=dynamic_sequence_len or 30)
+spelling_smooth_window: deque = deque(maxlen=SPELLING_SMOOTH_WINDOW)
 current_prediction = ""
 confidence_scores = []
 practice_word = ""
@@ -1177,6 +1520,50 @@ def legacy_prepare_spelling_frame(
     return frame, (x1, y1, x2, y2)
 
 
+def _label_threshold(idx: int, labels: list[str]) -> float:
+    """Return the confidence threshold for a given predicted index."""
+    if not labels or idx < 0 or idx >= len(labels):
+        return SPELLING_CONFIDENCE_THRESHOLD_DEFAULT
+    label = (labels[idx] or "").strip().upper()
+    if label in SPELLING_CONFUSED_LABELS:
+        return SPELLING_CONFIDENCE_THRESHOLD_CONFUSED
+    return SPELLING_CONFIDENCE_THRESHOLD_DEFAULT
+
+
+def smooth_spelling_prediction(probs: Optional[list[float]], labels: Optional[list[str]] = None) -> tuple[Optional[int], float, list[float]]:
+    """
+    Smooth spelling predictions over a small window and enforce a confidence floor
+    with stricter rules for easily-confused letters.
+    """
+    global spelling_smooth_window
+    if labels is None:
+        labels = spelling_labels
+    if probs is None:
+        spelling_smooth_window.clear()
+        return None, 0.0, []
+    arr = np.array(probs, dtype=float)
+    spelling_smooth_window.append(arr)
+    avg = np.mean(spelling_smooth_window, axis=0)
+    if avg.size == 0:
+        return None, 0.0, []
+
+    idx = int(np.argmax(avg))
+    conf = float(avg[idx])
+    threshold = _label_threshold(idx, labels)
+
+    # Runner-up gap check for confused letters.
+    sorted_idx = np.argsort(avg)
+    runner_idx = int(sorted_idx[-2]) if avg.size >= 2 else idx
+    runner_conf = float(avg[runner_idx]) if avg.size >= 2 else 0.0
+    gap = conf - runner_conf
+
+    label = (labels[idx] or "").strip().upper() if idx < len(labels) else ""
+    if (label in SPELLING_CONFUSED_LABELS and gap < SPELLING_CONFUSED_GAP) or conf < threshold:
+        return None, conf, avg.tolist()
+
+    return idx, conf, avg.tolist()
+
+
 def generate_frames():
     global current_prediction, confidence_scores, camera_active, current_camera_index
     global current_prediction_index, last_inference_mode
@@ -1280,7 +1667,7 @@ def generate_frames():
                     continue
 
                 imgOutput = img.copy()
-                hands, img = detector.findHands(img)
+                hands, _ = detector.findHands(img, draw=False)
 
                 if hands:
                     use_dynamic = practice_mode == "words"
@@ -1288,10 +1675,21 @@ def generate_frames():
                     prediction = None
                     index = 0
 
+                    # Focus on the largest detected hand to keep the ROI tight.
+                    primary_hand = max(
+                        hands,
+                        key=lambda h: (h.get("bbox", (0, 0, 0, 0))[2] * h.get("bbox", (0, 0, 0, 0))[3]),
+                    )
+                    hands_for_crop = [primary_hand]
+
                     if use_dynamic:
+                        spelling_smooth_window.clear()
+
                         target_size = dynamic_img_size
                         target_channels = dynamic_channels
-                        x1, y1, x2, y2 = expand_hand_bbox(hands, img.shape, offset, HAND_CONTEXT_RATIO)
+                        x1, y1, x2, y2 = expand_hand_bbox(
+                            hands_for_crop, img.shape, offset, HAND_CONTEXT_RATIO_DYNAMIC
+                        )
                         w = x2 - x1
                         h = y2 - y1
 
@@ -1326,9 +1724,13 @@ def generate_frames():
                         if len(sequence_buffer) == (dynamic_sequence_len or 30):
                             seq = np.stack(sequence_buffer, axis=0)
                             seq = np.expand_dims(seq, axis=0)
-                            prediction = dynamic_model.predict(seq, verbose=0)[0]
-                            index = int(np.argmax(prediction))
-                            current_prediction_index = index
+                            try:
+                                prediction = dynamic_model.predict(seq, verbose=0)[0]
+                                index = int(np.argmax(prediction))
+                                current_prediction_index = index
+                            except Exception:
+                                prediction = None
+                                current_prediction_index = 0
                         else:
                             prediction = None
                             current_prediction_index = 0
@@ -1347,7 +1749,7 @@ def generate_frames():
                         if is_legacy_spelling:
                             legacy = legacy_prepare_spelling_frame(
                                 img,
-                                hands,
+                                hands_for_crop,
                                 offset,
                                 LEGACY_SPELLING_IMG_SIZE,
                                 spelling_img_size,
@@ -1360,12 +1762,15 @@ def generate_frames():
                         else:
                             target_size = spelling_img_size
                             target_channels = spelling_channels
-                            x1, y1, x2, y2 = expand_hand_bbox(hands, img.shape, offset, HAND_CONTEXT_RATIO)
+                            x1, y1, x2, y2 = expand_hand_bbox(
+                                hands_for_crop, img.shape, offset, HAND_CONTEXT_RATIO_SPELLING
+                            )
                             w = x2 - x1
                             h = y2 - y1
                             imgWhite = np.ones((target_size, target_size, 3), np.uint8) * 255
                             imgCrop = img[y1:y2, x1:x2]
                             if imgCrop.size == 0:
+                                spelling_smooth_window.clear()
                                 continue
                             aspectRatio = h / w
                             if aspectRatio > 1:
@@ -1388,13 +1793,25 @@ def generate_frames():
                                     imgWhite[hGap:end_y, :] = imgResize[: end_y - hGap, :]
                             frame_input = _prepare_spelling_frame_for_model(imgWhite, target_channels, normalize=True)
 
-                        prediction = spelling_model.predict(np.expand_dims(frame_input, axis=0), verbose=0)[0]
-                        index = int(np.argmax(prediction))
-                        current_prediction_index = index
-                        current_prediction = (
-                            spelling_labels[index] if index < len(spelling_labels) else "UNKNOWN"
+                        try:
+                            raw_prediction = spelling_model.predict(
+                                np.expand_dims(frame_input, axis=0), verbose=0
+                            )[0]
+                        except Exception:
+                            raw_prediction = None
+                        index, conf, averaged = smooth_spelling_prediction(
+                            raw_prediction if isinstance(raw_prediction, (list, np.ndarray)) else None,
+                            spelling_labels,
                         )
-                        confidence_scores = prediction if isinstance(prediction, list) else prediction.tolist()
+                        if index is None:
+                            current_prediction_index = 0
+                            current_prediction = "Hold still"
+                        else:
+                            current_prediction_index = index
+                            current_prediction = (
+                                spelling_labels[index] if index < len(spelling_labels) else "UNKNOWN"
+                            )
+                        confidence_scores = averaged
 
                     # Draw bounding boxes and labels
                     cv2.rectangle(imgOutput, (x1, max(0, y1 - 50)),
@@ -1409,6 +1826,7 @@ def generate_frames():
                     current_prediction = "No hand detected"
                     confidence_scores = []
                     sequence_buffer.clear()
+                    spelling_smooth_window.clear()
 
                 # Encode frame
                 ret, buffer = cv2.imencode('.jpg', imgOutput)
@@ -1435,8 +1853,8 @@ def generate_frames():
 
 @app.route('/')
 def home():
-    if 'user_id' in session:
-        return redirect(url_for('index'))
+    # Always start at the login endpoint; the login view itself will bounce
+    # authenticated users to the dashboard.
     return redirect(url_for('login'))
 
 
@@ -1493,7 +1911,9 @@ def login():
         return redirect(url_for('index'))
 
     if request.method == 'POST':
-        global camera_active, current_camera_index
+        global camera_active, current_camera_index, practice_mode, practice_active
+        global practice_word, practice_targets, practice_display_sequence, current_letter_index
+        global sequence_buffer, spelling_smooth_window
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
 
@@ -1508,6 +1928,14 @@ def login():
             session['is_admin'] = bool(profile.get('is_admin'))
             camera_active = profile.get('camera_enabled', True)
             current_camera_index = profile.get('camera_index', 0)
+            practice_mode = "spelling"
+            practice_active = False
+            practice_word = ""
+            practice_targets = []
+            practice_display_sequence = []
+            current_letter_index = 0
+            sequence_buffer.clear()
+            spelling_smooth_window.clear()
             flash('Login successful!', 'success')
             return redirect(url_for('index'))
 
@@ -1527,6 +1955,8 @@ def logout():
 @login_required
 def index():
     global camera_active, current_camera_index
+    global practice_mode, practice_active, practice_word, practice_targets, practice_display_sequence, current_letter_index
+    global sequence_buffer, spelling_smooth_window
     uid = session.get('user_id')
     if not uid:
         session.clear()
@@ -1538,6 +1968,16 @@ def index():
         flash('Unable to load profile information. Please login again.', 'error')
         return redirect(url_for('login'))
 
+    # Default to spelling mode for letters each time the dashboard loads.
+    practice_mode = "spelling"
+    practice_active = False
+    practice_word = ""
+    practice_targets = []
+    practice_display_sequence = []
+    current_letter_index = 0
+    sequence_buffer.clear()
+    spelling_smooth_window.clear()
+
     camera_active = profile.get('camera_enabled', True)
     current_camera_index = profile.get('camera_index', 0)
     session['username'] = profile.get('username', session.get('username', ''))
@@ -1548,10 +1988,15 @@ def index():
 @app.route('/dataset/upload', methods=['GET', 'POST'])
 @login_required
 def dataset_upload():
+    if not dataset_upload_enabled_for_current_user():
+        flash('Dataset upload is currently disabled by admin.', 'error')
+        if session.get("is_admin"):
+            return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('index'))
     if request.method == 'POST':
         word = safe_word_folder(request.form.get('word', ''))
-        sample_fps_raw = request.form.get('sample_fps', '10')
-        max_frames_raw = request.form.get('max_frames', '0')
+        sample_fps_raw = request.form.get('sample_fps', '60')
+        target_frames_raw = request.form.get('target_frames', '100')
         save_raw = request.form.get('save_raw') == 'on'
         save_processed = request.form.get('save_processed') == 'on'
 
@@ -1559,56 +2004,65 @@ def dataset_upload():
             flash('Please provide a valid label (word).', 'error')
             return render_template('dataset_upload.html')
 
-        file = request.files.get('video')
-        if not file or file.filename == '':
-            flash('Please upload a video file.', 'error')
+        files = [f for f in request.files.getlist('videos') if f and f.filename]
+        if not files:
+            flash('Please upload at least one video file.', 'error')
             return render_template('dataset_upload.html')
 
-        if not allowed_file(file.filename, ALLOWED_VIDEO_EXT):
-            flash('Unsupported file type. Use mp4, mov, avi, mkv, or webm.', 'error')
+        invalid = [f.filename for f in files if not allowed_file(f.filename, ALLOWED_VIDEO_EXT)]
+        if invalid:
+            flash(f'Unsupported file type: {", ".join(invalid)}. Use mp4, mov, avi, mkv, or webm.', 'error')
             return render_template('dataset_upload.html')
 
         try:
             sample_fps = int(sample_fps_raw)
-            max_frames = int(max_frames_raw)
+            target_frames = int(target_frames_raw)
         except ValueError:
-            flash('Sample FPS and max frames must be integers.', 'error')
+            flash('Sample FPS and target frames must be integers.', 'error')
             return render_template('dataset_upload.html')
 
         sample_fps = max(1, sample_fps)
-        max_frames = max(0, max_frames)
+        target_frames = max(0, target_frames)
 
         os.makedirs(BASE_UPLOAD_DIR, exist_ok=True)
         os.makedirs(BASE_DATASET_DIR, exist_ok=True)
 
-        filename = secure_filename(file.filename)
-        upload_path = os.path.join(BASE_UPLOAD_DIR, f"{uuid.uuid4().hex}_{filename}")
-        file.save(upload_path)
+        results = []
+        for file in files:
+            filename = secure_filename(file.filename)
+            upload_path = os.path.join(BASE_UPLOAD_DIR, f"{uuid.uuid4().hex}_{filename}")
+            file.save(upload_path)
 
-        try:
-            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            run_id = f"{stamp}_{uuid.uuid4().hex[:8]}"
-            sample_dir = make_sample_dir(BASE_DATASET_DIR, word, run_id)
-            meta = extract_frames_from_video(
-                upload_path,
-                sample_dir,
-                detector,
-                offset,
-                imgSize,
-                sample_fps=sample_fps,
-                max_frames=max_frames,
-                save_raw=save_raw,
-                save_processed=save_processed,
-                extra_ratio=HAND_CONTEXT_RATIO,
-            )
-        except Exception as exc:
-            flash(f'Upload processed but failed during extraction: {exc}', 'error')
-            return render_template('dataset_upload.html')
+            try:
+                stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                run_id = f"{stamp}_{uuid.uuid4().hex[:8]}"
+                sample_dir = make_sample_dir(BASE_DATASET_DIR, word, run_id)
+                meta = extract_frames_from_video(
+                    upload_path,
+                    sample_dir,
+                    detector,
+                    offset,
+                    imgSize,
+                    sample_fps=sample_fps,
+                    target_frames=target_frames,
+                    save_raw=save_raw,
+                    save_processed=save_processed,
+                    extra_ratio=HAND_CONTEXT_RATIO,
+                    target_img_size=224,
+                )
+                results.append({
+                    "filename": filename,
+                    "sample_dir": sample_dir,
+                    "meta": meta,
+                })
+            except Exception as exc:
+                flash(f'Upload processed but failed during extraction for {filename}: {exc}', 'error')
 
-        flash('Video processed successfully!', 'success')
-        return render_template('dataset_upload.html', meta=meta, sample_dir=sample_dir, word=word)
+        if results:
+            flash(f'Processed {len(results)} video(s) successfully.', 'success')
+        return render_template('dataset_upload.html', results=results, word=word)
 
-    return render_template('dataset_upload.html')
+    return render_template('dataset_upload.html', results=None)
 
 
 @app.route('/admin', methods=['GET', 'POST'])
@@ -1616,20 +2070,31 @@ def dataset_upload():
 def admin_dashboard():
     action = (request.form.get('action', '') or '').lower() if request.method == 'POST' else ''
 
+    if action == 'toggle_dataset_visibility':
+        visible = request.form.get('dataset_visible') == 'on'
+        set_feature_flag(FEATURE_FLAG_DATASET_UPLOAD, visible)
+        flash(f'Dataset upload visibility set to {"on" if visible else "off"}.', 'success')
+        return redirect(url_for('admin_dashboard'))
+
     if action == 'rollback':
         model_type = (request.form.get('rollback_model_type', '') or '').lower()
         backup_name = (request.form.get('backup_name', '') or '').strip()
         uploader = session.get('username', 'admin')
 
-        if model_type not in ('dynamic', 'spelling'):
-            flash('Select a valid model type for rollback.', 'error')
-            return redirect(url_for('admin_dashboard'))
         if not backup_name:
             flash('Choose a backup to restore.', 'error')
             return redirect(url_for('admin_dashboard'))
+        if model_type not in ('dynamic', 'spelling'):
+            inferred = infer_backup_model_type(backup_name)
+            if inferred:
+                model_type = inferred
+            else:
+                flash('Select a valid model type for rollback.', 'error')
+                return redirect(url_for('admin_dashboard'))
 
+        created_backup = ""
         try:
-            backup_existing_model_files(model_type)
+            created_backup = backup_existing_model_files(model_type)
             restore_model_from_backup(model_type, backup_name)
             reload_model_from_disk(model_type)
             log_model_version(
@@ -1643,6 +2108,11 @@ def admin_dashboard():
             )
             flash('Rollback completed successfully.', 'success')
         except Exception as exc:
+            if created_backup:
+                try:
+                    restore_model_from_backup(model_type, os.path.basename(created_backup))
+                except Exception:
+                    pass
             flash(f'Rollback failed: {exc}', 'error')
         return redirect(url_for('admin_dashboard'))
 
@@ -1712,6 +2182,7 @@ def admin_dashboard():
 
     current_versions = get_current_model_versions()
     backups = list_model_backups()
+    dataset_visible = get_feature_flag(FEATURE_FLAG_DATASET_UPLOAD, False)
     return render_template(
         'admin_dashboard.html',
         username=session.get('username', ''),
@@ -1719,6 +2190,7 @@ def admin_dashboard():
         current_versions=current_versions,
         dynamic_backups=backups["dynamic"],
         spelling_backups=backups["spelling"],
+        dataset_visible=dataset_visible,
     )
 
 
@@ -1795,9 +2267,14 @@ def settings():
             camera_active = new_state
             status = "enabled" if camera_active else "disabled"
             flash(f'Camera {status} successfully!', 'success')
+            return redirect(url_for('settings'))
 
         elif action == 'change_camera':
-            new_index = int(request.form.get('camera_index', 0))
+            try:
+                new_index = int(request.form.get('camera_index', 0))
+            except (TypeError, ValueError):
+                flash('Invalid camera selection.', 'error')
+                return redirect(url_for('settings'))
             try:
                 update_user_profile(uid, {"camera_index": new_index})
             except sqlite3.Error:
@@ -1809,6 +2286,7 @@ def settings():
             user_profile['camera_index'] = new_index
             current_camera_index = new_index
             flash(f'Camera switched to index {new_index}', 'success')
+            return redirect(url_for('settings'))
 
     # Get available cameras
     available_cameras = get_camera_options()
@@ -1851,6 +2329,7 @@ def get_prediction():
     global current_letter_index, practice_active, practice_mode
 
     safe_confidence = [float(score) for score in confidence_scores] if confidence_scores else []
+    active_labels = dynamic_labels if practice_mode == "words" else spelling_labels
 
     should_advance = False
     normalized_prediction = normalize_word_token(current_prediction)
@@ -1864,6 +2343,7 @@ def get_prediction():
         'prediction': current_prediction,
         'normalized_prediction': normalized_prediction,
         'confidence': safe_confidence,
+        'labels': active_labels,
         'practice_active': practice_active,
         'practice_mode': practice_mode,
         'practice_word': practice_word,

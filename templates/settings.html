@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - Malaysian Sign Language Detector</title>
     <style>
+        html { font-size: 80%; }
+
         * {
             margin: 0;
             padding: 0;
@@ -312,20 +314,9 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-brand">🤟 MSL Detector</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item active">Settings</a>
-            <a href="{{ url_for('dataset_upload') }}" class="navbar-item">Dataset Upload</a>
-        </div>
-        <div class="navbar-user">
-            <div class="user-icon">{{ user.username[0].upper() }}</div>
-            <span>{{ user.username }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
+    {% include "_navbar.html" %}
+
+
 
     <div class="container">
         <div class="header">

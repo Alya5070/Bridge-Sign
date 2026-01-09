@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Malaysian Sign Language Detector</title>
     <style>
+        html { font-size: 80%; }
+
         * {
             margin: 0;
             padding: 0;
@@ -689,25 +691,9 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-brand">🤟 MSL Detector</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item active">Dashboard</a>
-            {% if not is_admin %}
-            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
-            {% endif %}
-            <a href="{{ url_for('settings') }}" class="navbar-item">Settings</a>
-            <a href="{{ url_for('dataset_upload') }}" class="navbar-item">Dataset Upload</a>
-            {% if is_admin %}
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item">Admin</a>
-            {% endif %}
-        </div>
-        <div class="navbar-user">
-            <div class="user-icon">{{ username[0].upper() }}</div>
-            <span>{{ username }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
+    {% include "_navbar.html" %}
+
+
 
     <div class="container">
         <div class="header">
@@ -772,28 +758,28 @@
                     <img src="{{ url_for('video_feed') }}" alt="Video Feed">
                 </div>
 
+                <div class="prediction-section">
+                    <div class="prediction-card">
+                        <h2>Current Prediction</h2>
+                        <div class="prediction-display" id="prediction">-</div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3>Confidence Levels</h3>
+                        <div class="confidence-bars" id="confidence-bars">
+                            <p style="text-align: center; color: #999;">Waiting for detection...</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="instructions">
-                    <h4>📋 Instructions:</h4>
+                    <h4>?? Instructions:</h4>
                     <ul>
                         <li>Position your hand clearly in front of the camera</li>
                         <li>Ensure good lighting for better detection</li>
                         <li>Make clear sign language gestures</li>
                         <li>The prediction updates in real-time</li>
                     </ul>
-                </div>
-            </div>
-
-            <div class="prediction-section">
-                <div class="prediction-card">
-                    <h2>Current Prediction</h2>
-                    <div class="prediction-display" id="prediction">-</div>
-                </div>
-
-                <div class="info-card">
-                    <h3>Confidence Levels</h3>
-                    <div class="confidence-bars" id="confidence-bars">
-                        <p style="text-align: center; color: #999;">Waiting for detection...</p>
-                    </div>
                 </div>
             </div>
 
@@ -837,7 +823,9 @@
         let availableWords = [];
         let wordQueue = [];
 
-        const labels = Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i));
+        let currentLabels = Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i));
+        // Back-compat alias used by existing helpers.
+        let labels = currentLabels;
 
         const normalizeWordInput = (value) => (value || '')
             .toUpperCase()
@@ -1416,10 +1404,15 @@
                 const predictionElement = document.getElementById('prediction');
                 predictionElement.textContent = data.prediction || '-';
 
+                if (Array.isArray(data.labels) && data.labels.length > 0) {
+                    currentLabels = data.labels;
+                    labels = currentLabels;
+                }
+
                 if (data.confidence && data.confidence.length > 0) {
                     const confidenceBars = document.getElementById('confidence-bars');
 
-                    const confidenceData = labels.map((label, idx) => ({
+                    const confidenceData = currentLabels.map((label, idx) => ({
                         label,
                         confidence: data.confidence[idx] || 0
                     })).sort((a, b) => b.confidence - a.confidence).slice(0, 5);
