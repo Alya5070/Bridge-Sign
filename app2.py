@@ -61,7 +61,7 @@ def _env_flag(name: str, default: bool = False) -> bool:
         return default
     return str(raw).strip().lower() in {"1", "true", "yes", "on"}
 
-
+# test
 # Force SQLite-first behavior unless the flag is explicitly enabled.
 USE_SUPABASE_ONLY = _env_flag("USE_SUPABASE_ONLY", False)
 
