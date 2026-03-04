@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Module - Bridge Sign</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --accent: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #4f46e5;
+            top: -100px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #c026d3;
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(100px, 50px) scale(1.2);
+            }
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Navigation */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            margin: 1.5rem;
+            z-index: 10;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-menu {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .navbar-item {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-item:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .navbar-item.active {
+            color: #fff;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fff;
+        }
+
+        /* Container & Modules */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem 2rem 1.5rem;
+        }
+
+        .setup-container {
+            padding: 2rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .quiz-container {
+            display: none;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 160px);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Setup UI */
+        .setup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 1rem;
+        }
+
+        .setup-header h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mode-toggle {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            outline: none;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .mode-toggle:focus {
+            border-color: var(--primary);
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 1rem;
+        }
+
+        /* Custom Checkbox Tile */
+        .item-label {
+            display: block;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .item-label input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .item-tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .item-label:hover input~.item-tile {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .item-label input:checked~.item-tile {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .setup-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 1.5rem;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border: 1px solid var(--primary-light);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: transparent;
+            color: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Camera UI */
+        .camera-section {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .section-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .video-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+            border-radius: 0 0 20px 20px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Quiz Panel */
+        .quiz-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .quiz-content {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0 0 20px 20px;
+            text-align: center;
+        }
+
+        .target-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .target-label {
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+
+        .target-value {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--primary-light);
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            line-height: 1;
+            margin-bottom: 2rem;
+            word-break: break-all;
+        }
+
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .quiz-stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Completion Overlay */
+        .completion-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            border-radius: 20px;
+        }
+
+        .completion-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .celebration-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-30px);
+            }
+
+            60% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .quiz-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .video-container {
+                min-height: 400px;
+            }
+
+            .quiz-content {
+                padding: 1.5rem;
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <nav class="navbar glass-panel">
+        <div class="navbar-brand">Bridge Sign</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item active">Quiz</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item">Settings</a>
+            {% if is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item">Admin</a>
+            {% endif %}
+        </div>
+        <div class="navbar-user">
+            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
+            <span>{{ username }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+
+        <!-- Setup Screen -->
+        <div class="setup-container glass-panel" id="setupView">
+            <div class="setup-header">
+                <h2>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Configure Quiz
+                </h2>
+                <div>
+                    <span style="color: var(--text-muted); margin-right: 1rem; font-size: 0.9rem;">Dictionary:</span>
+                    <select id="modeSelect" class="mode-toggle" onchange="fetchLabels()">
+                        <option value="spelling">Spelling (A-Z)</option>
+                        <option value="words">Words</option>
+                    </select>
+                </div>
+            </div>
+
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Select the signs you want to be tested on. They
+                will be presented in random order.</p>
+
+            <div class="items-grid" id="itemsGrid">
+                <!-- Checkboxes injected by JS -->
+            </div>
+
+            <div class="setup-actions">
+                <div>
+                    <button class="btn-secondary" onclick="selectAll(true)" style="margin-right: 0.5rem;">Select
+                        All</button>
+                    <button class="btn-secondary" onclick="selectAll(false)">Clear</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="selectionCount" style="color: var(--text-muted); font-weight: 500;">0 selected</span>
+                    <button class="btn-primary" id="startBtn" onclick="startQuiz()" disabled>Start Quiz</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Quiz Screen -->
+        <div class="quiz-container" id="quizView">
+            <!-- Camera Pane -->
+            <div class="camera-section glass-panel">
+                <div class="section-header">
+                    <h2>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                            </path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        Live Feed
+                    </h2>
+                    <button class="btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.8rem;"
+                        onclick="endQuiz()">Abort</button>
+                </div>
+                <div class="video-container">
+                    <img src="{{ url_for('video_feed') }}" alt="Camera Feed" class="video-feed" id="liveCamera">
+                </div>
+            </div>
+
+            <!-- Quiz Status Pane -->
+            <div class="quiz-panel glass-panel" style="position: relative;">
+                <div class="section-header">
+                    <h2>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Evaluation
+                    </h2>
+                </div>
+                <div class="quiz-content">
+                    <div class="target-box">
+                        <span class="target-label">Please Sign</span>
+                        <div class="target-value" id="quizTarget">-</div>
+
+                        <div style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                                <span
+                                    style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Detection
+                                    Lock</span>
+                                <span id="lockPctText"
+                                    style="font-size: 0.75rem; color: var(--accent); font-weight: bold;">0%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="lockProgress"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quiz-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Progress</span>
+                            <span class="stat-value" id="progressStat">0 / 0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Accuracy Hints</span>
+                            <span class="stat-value" style="color: var(--primary-light);" id="currentPredStat">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Complete View Overlay -->
+                <div class="completion-overlay" id="completionOverlay">
+                    <div class="celebration-icon">🏆</div>
+                    <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Quiz Perfected!</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 2rem;">You successfully signed <span
+                            id="finalScore" style="color: #fff; font-weight: bold;">0</span> items.</p>
+                    <button class="btn-primary" onclick="endQuiz()">Return to Setup</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Logic -->
+    <script>
+        let availableLabels = [];
+        let selectedQuizStr = [];
+        let activeQuizQueue = [];
+        let currentTarget = "";
+
+        let detectionMatches = 0;
+        const MATCHES_NEEDED = 6; // approx 1.2 seconds of holding the sign
+        let pollInterval = null;
+
+        const setupView = document.getElementById('setupView');
+        const quizView = document.getElementById('quizView');
+
+        // Fetch labels upon loading
+        window.addEventListener('DOMContentLoaded', fetchLabels);
+
+        async function fetchLabels() {
+            const mode = document.getElementById('modeSelect').value;
+            try {
+                const res = await fetch(`/get_labels?mode=${mode}`);
+                const data = await res.json();
+                if (data.labels) {
+                    availableLabels = data.labels;
+                    renderCheckboxes();
+                }
+            } catch (err) {
+                console.error("Failed fetching labels:", err);
+            }
+        }
+
+        function renderCheckboxes() {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = "";
+            availableLabels.forEach(label => {
+                const checked = selectedQuizStr.includes(label) ? "checked" : "";
+                grid.innerHTML += `
+                    <label class="item-label">
+                        <input type="checkbox" value="${label}" onchange="updateSelection()" ${checked}>
+                        <div class="item-tile">${label}</div>
+                    </label>
+                `;
+            });
+            updateSelection();
+        }
+
+        function selectAll(force) {
+            const checkboxes = document.querySelectorAll('.item-label input');
+            checkboxes.forEach(cb => cb.checked = force);
+            updateSelection();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.item-label input:checked');
+            selectedQuizStr = Array.from(checkboxes).map(cb => cb.value);
+
+            const count = selectedQuizStr.length;
+            document.getElementById('selectionCount').textContent = `${count} selected`;
+            document.getElementById('startBtn').disabled = count === 0;
+        }
+
+        // Shuffle array helper
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        async function startQuiz() {
+            if (selectedQuizStr.length === 0) return;
+
+            // 1. Tell backend to switch mode if not already on it
+            const mode = document.getElementById('modeSelect').value;
+            await fetch('/switch_mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode })
+            });
+
+            // 2. Setup quiz arrays
+            activeQuizQueue = shuffleArray(selectedQuizStr);
+            console.log("Quiz queue:", activeQuizQueue);
+
+            // 3. UI Flip
+            setupView.style.display = "none";
+            quizView.style.display = "grid";
+            document.getElementById('completionOverlay').classList.remove('active');
+
+            // 4. Start polling
+            nextTarget();
+            pollInterval = setInterval(pollQuizPrediction, 200);
+        }
+
+        function nextTarget() {
+            if (activeQuizQueue.length === 0) {
+                showCompletion();
+                return;
+            }
+
+            currentTarget = activeQuizQueue.shift();
+            detectionMatches = 0;
+
+            document.getElementById('quizTarget').textContent = currentTarget;
+            document.getElementById('progressStat').textContent = `${selectedQuizStr.length - activeQuizQueue.length} / ${selectedQuizStr.length}`;
+            updateLockUI(0);
+        }
+
+        function updateLockUI(pct) {
+            document.getElementById('lockProgress').style.width = `${pct}%`;
+            document.getElementById('lockPctText').textContent = `${Math.floor(pct)}%`;
+        }
+
+        async function pollQuizPrediction() {
+            if (!currentTarget) return;
+
+            try {
+                // Ensure backend isn't practicing its own standard list
+                const res = await fetch('/get_prediction');
+                const data = await res.json();
+
+                const pred = data.prediction || "";
+                document.getElementById('currentPredStat').textContent = pred ? pred : "-";
+
+                // Case-insensitive comparison
+                if (pred.toUpperCase() === currentTarget.toUpperCase()) {
+                    detectionMatches++;
+                    const pct = Math.min(100, (detectionMatches / MATCHES_NEEDED) * 100);
+                    updateLockUI(pct);
+
+                    if (detectionMatches >= MATCHES_NEEDED) {
+                        // Success! Flashing green briefly, then next
+                        document.getElementById('lockProgress').style.background = "#fff";
+                        setTimeout(() => {
+                            document.getElementById('lockProgress').style.background = "var(--accent)";
+                            nextTarget();
+                        }, 400);
+                        // Prevent multi triggers
+                        currentTarget = null;
+                    }
+                } else {
+                    detectionMatches = Math.max(0, detectionMatches - 1);
+                    updateLockUI((detectionMatches / MATCHES_NEEDED) * 100);
+                }
+            } catch (e) { console.error("Poll fail", e); }
+        }
+
+        function showCompletion() {
+            clearInterval(pollInterval);
+            document.getElementById('finalScore').textContent = selectedQuizStr.length;
+            document.getElementById('completionOverlay').classList.add('active');
+        }
+
+        function endQuiz() {
+            clearInterval(pollInterval);
+            quizView.style.display = "none";
+            setupView.style.display = "block";
+            currentTarget = "";
+            activeQuizQueue = [];
+        }
+    </script>
+</body>
+
+</html>

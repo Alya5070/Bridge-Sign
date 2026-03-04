@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Malaysian Sign Language Detector</title>
+    <title>Profile - Bridge Sign</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        html { font-size: 80%; }
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --secondary: #2563eb;
+            --accent: #10b981;
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+        }
 
         * {
             margin: 0;
@@ -14,248 +27,316 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
-            padding: 20px;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
         }
 
+        /* Animated Background Orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out;
+            opacity: 0.5;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #4f46e5;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: #2563eb;
+            bottom: -200px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Navigation */
         .navbar {
-            background: white;
-            border-radius: 15px;
-            padding: 20px 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
+            padding: 1rem 2rem;
+            margin: 1.5rem;
+            z-index: 10;
         }
 
         .navbar-brand {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
         }
 
         .navbar-menu {
             display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .navbar-item {
             text-decoration: none;
-            color: #333;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 8px;
-            transition: all 0.3s;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
         }
 
         .navbar-item:hover {
-            background: #f0f0f0;
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .navbar-item.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: #fff;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
         }
 
         .navbar-user {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding-left: 20px;
-            border-left: 2px solid #e0e0e0;
+            gap: 1rem;
         }
 
-        .user-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1rem;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
         }
 
         .logout-btn {
-            padding: 10px 20px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
             text-decoration: none;
-            transition: all 0.3s;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
         }
 
         .logout-btn:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
+            background: rgba(239, 68, 68, 0.2);
+            color: #fff;
         }
 
+        /* Main Container */
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 800px;
-            margin: 0 auto;
-            overflow: hidden;
+            margin: 2rem auto;
+            width: calc(100% - 3rem);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
 
         .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 40px 30px;
+            color: var(--text-muted);
+            font-size: 1rem;
         }
 
         .alert {
-            padding: 12px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 0.95em;
+            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
         }
 
         .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border-left: 4px solid #10b981;
+            color: #34d399;
+            border-color: rgba(52, 211, 153, 0.3);
         }
 
         .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border-left: 4px solid #ef4444;
+            color: #f87171;
+            border-color: rgba(248, 113, 113, 0.3);
         }
 
         .profile-card {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .profile-header {
             display: flex;
             align-items: center;
-            gap: 20px;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e0e0e0;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .profile-avatar {
+        .profile-avatar-large {
             width: 80px;
             height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #60a5fa, #8b5cf6);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #fff;
             font-weight: bold;
-            font-size: 2.5em;
+            font-size: 2.5rem;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
         }
 
         .profile-info h2 {
-            color: #333;
-            margin-bottom: 5px;
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
         }
 
         .profile-info p {
-            color: #666;
+            color: var(--text-muted);
+            font-size: 0.9rem;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 1.5rem;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
-            font-size: 0.95em;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
         .form-input {
             width: 100%;
-            padding: 14px 18px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1em;
-            transition: border-color 0.3s;
+            padding: 1rem 1.2rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
+            background: rgba(0, 0, 0, 0.3);
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
         .form-button {
-            padding: 14px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 1rem 2rem;
+            background: var(--primary);
+            color: #fff;
             border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
+            border-radius: 12px;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.3s;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
         }
 
         .form-button:hover {
+            background: var(--primary-light);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
         }
 
         .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #667eea;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            margin-top: 1rem;
         }
 
         .back-link:hover {
-            text-decoration: underline;
+            color: #fff;
         }
 
         @media (max-width: 768px) {
             .navbar {
                 flex-direction: column;
-                align-items: stretch;
+                padding: 1rem;
+            }
+
+            .navbar-menu {
+                order: 3;
+                margin-top: 1rem;
+                width: 100%;
+                justify-content: center;
             }
 
             .navbar-user {
-                border-left: none;
-                border-top: 2px solid #e0e0e0;
-                padding-left: 0;
-                padding-top: 15px;
-                justify-content: space-between;
+                margin-left: auto;
             }
 
             .profile-header {
@@ -265,56 +346,75 @@
         }
     </style>
 </head>
+
 <body>
-    {% include "_navbar.html" %}
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
 
+    <nav class="navbar glass-panel">
+        <div class="navbar-brand">Bridge Sign</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item">Quiz</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item active">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item">Settings</a>
+            {% if user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item">Admin</a>
+            {% endif %}
+        </div>
+        <div class="navbar-user">
+            <div class="user-avatar">{{ user.username[0].upper() }}</div>
+            <span>{{ user.username }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
 
-
-    <div class="container">
+    <div class="container glass-panel">
         <div class="header">
-            <h1>👤 My Profile</h1>
+            <h1>My Profile</h1>
             <p>Manage your account settings</p>
         </div>
 
         <div class="content">
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
 
             <div class="profile-card">
                 <div class="profile-header">
-                    <div class="profile-avatar">{{ user.username[0].upper() }}</div>
+                    <div class="profile-avatar-large">{{ user.username[0].upper() }}</div>
                     <div class="profile-info">
                         <h2>{{ user.username }}</h2>
-                        <p>User ID: #{{ user.id }}</p>
+                        <p>User Tag: #{{ user.id }}</p>
                     </div>
                 </div>
 
                 <form method="POST" action="{{ url_for('profile') }}">
                     <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" 
-                               id="username" 
-                               name="username" 
-                               class="form-input" 
-                               value="{{ user.username }}"
-                               minlength="3"
-                               required>
-                        <p style="font-size: 0.85em; color: #666; margin-top: 5px;">Minimum 3 characters</p>
+                        <label for="username">Display Name</label>
+                        <input type="text" id="username" name="username" class="form-input" value="{{ user.username }}"
+                            minlength="3" required>
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem;">Minimum 3
+                            characters</p>
                     </div>
 
                     <button type="submit" class="form-button">Update Profile</button>
                 </form>
             </div>
 
-            <a href="{{ url_for('index') }}" class="back-link">← Back to Dashboard</a>
+            <a href="{{ url_for('index') }}" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to Dashboard
+            </a>
         </div>
     </div>
 </body>
+
 </html>

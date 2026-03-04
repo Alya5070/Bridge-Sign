@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Malaysian Sign Language Detector</title>
+    <title>Settings - Bridge Sign</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        html { font-size: 80%; }
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --secondary: #2563eb;
+            --accent: #10b981;
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+        }
 
         * {
             margin: 0;
@@ -14,387 +27,532 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
-            padding: 20px;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
         }
 
+        /* Animated Background Orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out;
+            opacity: 0.5;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #4f46e5;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: #2563eb;
+            bottom: -200px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Navigation */
         .navbar {
-            background: white;
-            border-radius: 15px;
-            padding: 20px 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
+            padding: 1rem 2rem;
+            margin: 1.5rem;
+            z-index: 10;
         }
 
         .navbar-brand {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
         }
 
         .navbar-menu {
             display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .navbar-item {
             text-decoration: none;
-            color: #333;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 8px;
-            transition: all 0.3s;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
         }
 
         .navbar-item:hover {
-            background: #f0f0f0;
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .navbar-item.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: #fff;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
         }
 
         .navbar-user {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding-left: 20px;
-            border-left: 2px solid #e0e0e0;
+            gap: 1rem;
         }
 
-        .user-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1rem;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
         }
 
         .logout-btn {
-            padding: 10px 20px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
             text-decoration: none;
-            transition: all 0.3s;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
         }
 
         .logout-btn:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
+            background: rgba(239, 68, 68, 0.2);
+            color: #fff;
         }
 
+        /* Main Container */
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 900px;
-            margin: 0 auto;
-            overflow: hidden;
+            margin: 2rem auto;
+            width: calc(100% - 3rem);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
 
         .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 40px 30px;
+            color: var(--text-muted);
+            font-size: 1rem;
         }
 
         .alert {
-            padding: 12px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 0.95em;
+            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
         }
 
         .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border-left: 4px solid #10b981;
+            color: #34d399;
+            border-color: rgba(52, 211, 153, 0.3);
         }
 
         .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border-left: 4px solid #ef4444;
+            color: #f87171;
+            border-color: rgba(248, 113, 113, 0.3);
         }
 
         .settings-card {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .settings-card h2 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.5em;
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.5rem;
         }
 
-        .settings-card p {
-            color: #666;
-            margin-bottom: 20px;
+        .settings-card>p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
         }
 
         .setting-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .setting-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .setting-info h3 {
-            color: #333;
-            margin-bottom: 5px;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
         }
 
         .setting-info p {
-            color: #666;
-            font-size: 0.9em;
-            margin: 0;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
         }
 
-        .setting-status {
-            padding: 8px 16px;
+        .status-badge {
+            padding: 0.4rem 0.8rem;
             border-radius: 20px;
-            font-size: 0.9em;
+            font-size: 0.85rem;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
         }
 
         .status-enabled {
-            background: #d1fae5;
-            color: #065f46;
+            background: rgba(52, 211, 153, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
         }
 
         .status-disabled {
-            background: #fee2e2;
-            color: #991b1b;
+            background: rgba(248, 113, 113, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-enabled .status-dot {
+            background: #34d399;
+            box-shadow: 0 0 8px #34d399;
+        }
+
+        .status-disabled .status-dot {
+            background: #f87171;
         }
 
         .form-select {
-            padding: 12px 18px;
-            border: 2px solid #e0e0e0;
+            padding: 0.8rem 1.2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            font-size: 1em;
-            background: white;
+            color: #fff;
+            font-family: inherit;
             cursor: pointer;
-            transition: border-color 0.3s;
+            transition: all 0.2s;
+            outline: none;
+            min-width: 200px;
+        }
+
+        .form-select option {
+            background: #1e1b4b;
+            color: #fff;
         }
 
         .form-select:focus {
-            outline: none;
-            border-color: #667eea;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
-        .form-button {
-            padding: 12px 30px;
+        .btn-action {
+            padding: 0.8rem 1.5rem;
             border: none;
             border-radius: 10px;
-            font-size: 1em;
             font-weight: 600;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-left: 15px;
+            transition: all 0.2s;
+            font-family: inherit;
         }
 
-        .btn-toggle {
-            background: #667eea;
-            color: white;
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
 
-        .btn-toggle:hover {
-            background: #5568d3;
+        .btn-primary:hover {
+            background: var(--primary-light);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.5);
         }
 
-        .btn-change {
-            background: #10b981;
-            color: white;
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .btn-change:hover {
-            background: #059669;
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
         }
 
         .camera-selector {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 1rem;
             flex-wrap: wrap;
         }
 
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #667eea;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            margin-top: 1rem;
         }
 
         .back-link:hover {
-            text-decoration: underline;
+            color: #fff;
         }
 
         @media (max-width: 768px) {
             .navbar {
                 flex-direction: column;
-                align-items: stretch;
+                padding: 1rem;
+            }
+
+            .navbar-menu {
+                order: 3;
+                margin-top: 1rem;
+                width: 100%;
+                justify-content: center;
             }
 
             .navbar-user {
-                border-left: none;
-                border-top: 2px solid #e0e0e0;
-                padding-left: 0;
-                padding-top: 15px;
-                justify-content: space-between;
+                margin-left: auto;
             }
 
             .setting-item {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 15px;
+                gap: 1.5rem;
             }
 
             .camera-selector {
                 width: 100%;
+                flex-direction: column;
+                align-items: stretch;
             }
 
-            .form-select {
-                flex: 1;
-            }
-
-            .form-button {
-                margin-left: 0;
+            .btn-action {
                 width: 100%;
             }
         }
     </style>
 </head>
+
 <body>
-    {% include "_navbar.html" %}
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
 
+    <nav class="navbar glass-panel">
+        <div class="navbar-brand">Bridge Sign</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item">Quiz</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item active">Settings</a>
+            {% if user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item">Admin</a>
+            {% endif %}
+        </div>
+        <div class="navbar-user">
+            <div class="user-avatar">{{ user.username[0].upper() }}</div>
+            <span>{{ user.username }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
 
-
-    <div class="container">
+    <div class="container glass-panel">
         <div class="header">
-            <h1>⚙️ Settings</h1>
-            <p>Configure your camera and preferences</p>
+            <h1>Settings</h1>
+            <p>Configure your hardware preferences</p>
         </div>
 
         <div class="content">
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
 
-            <!-- Camera Toggle -->
             <div class="settings-card">
-                <h2>📹 Camera Control</h2>
-                <p>Enable or disable your camera for sign language detection</p>
-                
+                <h2>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    Camera Control
+                </h2>
+                <p>Toggle your video feed for real-time sign language detection.</p>
+
                 <div class="setting-item">
                     <div class="setting-info">
-                        <h3>Camera Status</h3>
-                        <p>Turn your camera on or off</p>
+                        <h3>Capture Status</h3>
+                        <p>Feed is currently {{ 'active' if user.camera_enabled else 'inactive' }}</p>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span class="setting-status {% if user.camera_enabled %}status-enabled{% else %}status-disabled{% endif %}">
-                            {% if user.camera_enabled %}● Enabled{% else %}● Disabled{% endif %}
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="status-badge {{ 'status-enabled' if user.camera_enabled else 'status-disabled' }}">
+                            <span class="status-dot"></span>
+                            {{ 'Enabled' if user.camera_enabled else 'Disabled' }}
                         </span>
-                        <form method="POST" action="{{ url_for('settings') }}" style="display: inline;">
+
+                        <form method="POST" action="{{ url_for('settings') }}">
                             <input type="hidden" name="action" value="toggle_camera">
-                            <button type="submit" class="form-button btn-toggle">
-                                {% if user.camera_enabled %}Disable Camera{% else %}Enable Camera{% endif %}
+                            <button type="submit"
+                                class="btn-action {{ 'btn-secondary' if user.camera_enabled else 'btn-primary' }}">
+                                {{ 'Disable Camera' if user.camera_enabled else 'Enable Camera' }}
                             </button>
                         </form>
                     </div>
                 </div>
             </div>
 
-            <!-- Camera Selection -->
             <div class="settings-card">
-                <h2>🎥 Camera Selection</h2>
-                <p>Choose which camera to use if you have multiple cameras</p>
+                <h2>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    Hardware Selection
+                </h2>
+                <p>Choose the source for your video feed if multiple capture devices are present.</p>
 
                 <div class="setting-item">
                     <div class="setting-info">
-                        <h3>Active Camera</h3>
-                        <p>Currently using: {{ current_camera_label }}</p>
+                        <h3>Active Interface</h3>
+                        <p>Index binding: Camera {{ user.camera_index }}</p>
                     </div>
                     <form method="POST" action="{{ url_for('settings') }}" class="camera-selector">
                         <input type="hidden" name="action" value="change_camera">
                         <select name="camera_index" class="form-select" required>
                             {% if available_cameras %}
-                                {% for cam in available_cameras %}
-                                    <option value="{{ cam.index }}" {% if cam.index == user.camera_index %}selected{% endif %}>
-                                        {{ cam.label }}
-                                    </option>
-                                {% endfor %}
+                            {% for cam_id in available_cameras %}
+                            <option value="{{ cam_id }}" {% if cam_id==user.camera_index %}selected{% endif %}>
+                                Capture Device {{ cam_id }}
+                            </option>
+                            {% endfor %}
                             {% else %}
-                                <option value="0">No cameras detected</option>
+                            <option value="0">No interfaces detected</option>
                             {% endif %}
                         </select>
-                        <button type="submit" class="form-button btn-change">Change Camera</button>
+                        <button type="submit" class="btn-action btn-secondary">Bind Device</button>
                     </form>
                 </div>
 
                 {% if not available_cameras %}
-                <div style="background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 10px; margin-top: 15px;">
-                    ⚠️ No cameras detected. Please check your camera connections.
+                <div class="alert-warning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    No capture devices detected. Please verify your camera is operational and connected.
                 </div>
                 {% endif %}
             </div>
 
-            <a href="{{ url_for('index') }}" class="back-link">← Back to Dashboard</a>
+            <a href="{{ url_for('index') }}" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to Dashboard
+            </a>
         </div>
     </div>
 </body>
+
 </html>
