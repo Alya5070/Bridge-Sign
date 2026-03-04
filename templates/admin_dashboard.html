@@ -1,240 +1,496 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Update Model</title>
+    <title>Admin - Bridge Sign</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        html { font-size: 80%; }
-
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --danger: #ef4444;
+            --success: #10b981;
         }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out;
+            opacity: 0.5;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #4f46e5;
+            top: -100px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: #2563eb;
+            bottom: -200px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
         .navbar {
-            background: white;
-            border-radius: 15px;
-            padding: 20px 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
+            padding: 1rem 2rem;
+            margin: 1.5rem;
+            z-index: 10;
         }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
         .navbar-menu {
             display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
+            gap: 1rem;
         }
+
         .navbar-item {
             text-decoration: none;
-            color: #333;
-            font-weight: 600;
-            padding: 10px 16px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
         }
-        .navbar-item.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
+
         .navbar-item:hover {
-            background: #f0f0f0;
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
         }
+
+        .navbar-item.active {
+            color: #fff;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+        }
+
         .navbar-user {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 1rem;
         }
-        .user-icon {
-            width: 38px;
-            height: 38px;
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
         }
+
         .logout-btn {
-            padding: 10px 16px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
             text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
         }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fff;
+        }
+
         .container {
-            background: white;
-            border-radius: 18px;
             max-width: 900px;
-            margin: 0 auto;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            margin: 2rem auto;
+            width: calc(100% - 3rem);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
         }
-        h1 {
-            color: #4c51bf;
-            margin-bottom: 12px;
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
         }
-        p.subtle {
-            color: #4b5563;
-            margin-bottom: 24px;
+
+        .header p {
+            color: var(--text-muted);
         }
+
+        .alert {
+            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            color: #34d399;
+            border-color: rgba(52, 211, 153, 0.3);
+        }
+
+        .alert-error {
+            color: #f87171;
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+
+        .admin-card {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .admin-card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .admin-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
         .form-grid {
             display: grid;
-            gap: 18px;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            margin-bottom: 12px;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         label {
-            font-weight: 600;
-            color: #111827;
-            display: block;
-            margin-bottom: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-muted);
         }
-        select, input[type="text"], textarea, input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #e5e7eb;
+
+        input[type="file"],
+        select {
+            padding: 0.8rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            font-size: 1em;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
         }
-        textarea { resize: vertical; min-height: 120px; }
-        .note {
-            font-size: 0.95em;
-            color: #6b7280;
-            margin-top: 4px;
-        }
-        .btn-primary {
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        input[type="file"]::file-selector-button {
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            margin-right: 1rem;
+            font-weight: 500;
         }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+
+        select option {
+            background: #1e1b4b;
+            color: #fff;
         }
-        .flash {
-            padding: 14px 16px;
-            border-radius: 12px;
-            margin-bottom: 16px;
+
+        .btn-action {
+            margin-top: 1rem;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 10px;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
         }
-        .flash.success { background: #ecfdf3; color: #166534; border: 1px solid #bbf7d0; }
-        .flash.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecdd3; }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
+
 <body>
-    {% include '_navbar.html' %}
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
 
-<div class="container">
-        <h1>Update Model</h1>
-        <p class="subtle">Upload a new Keras model (.h5) and matching labels (.txt). Existing files are backed up to <code>Model/Backup Model/</code> with a timestamp.</p>
-        <p class="subtle">
-            Current versions ??" Dynamic: <strong>{{ current_versions.dynamic }}</strong>,
-            Spelling: <strong>{{ current_versions.spelling }}</strong>
-        </p>
+    <nav class="navbar glass-panel">
+        <div class="navbar-brand">Bridge Sign</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item">Quiz</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item">Settings</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item active">Admin</a>
+        </div>
+        <div class="navbar-user">
+            <div class="user-avatar">{{ username[0].upper() }}</div>
+            <span>{{ username }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
 
-        <div class="settings-card" style="margin-bottom: 20px;">
-            <h2>Dataset Upload Visibility</h2>
-            <p class="subtle">Control whether the dataset upload page is visible to users.</p>
-            <form method="POST" action="{{ url_for('admin_dashboard') }}">
-                <input type="hidden" name="action" value="toggle_dataset_visibility">
-                <label style="display:flex;align-items:center;gap:10px;">
-                    <input type="checkbox" name="dataset_visible" {% if dataset_visible %}checked{% endif %}>
-                    Enable Dataset Upload for non-admin users
-                </label>
-                <p class="note">Admins always see the link.</p>
-                <button type="submit" class="btn-primary" style="margin-top:10px;">Save Visibility</button>
-            </form>
+    <div class="container glass-panel">
+        <div class="header">
+            <h1>Admin Dashboard</h1>
+            <p>Manage spelling model versions and backups</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
 
-        <form method="POST" enctype="multipart/form-data">
-            <div class="form-grid">
-                <div>
-                    <label for="model_type">Model Type</label>
-                    <select id="model_type" name="model_type" required>
-                        <option value="dynamic">Dynamic Model (words) — current {{ current_versions.dynamic }}</option>
-                        <option value="spelling">Spelling Model (letters) — current {{ current_versions.spelling }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="version">Version (current: {{ current_versions.dynamic }} / {{ current_versions.spelling }})</label>
-                    <input type="text" id="version" name="version" placeholder="e.g., 1.1.0" required>
-                </div>
-            </div>
+        <div class="admin-card">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Publish New Model
+            </h2>
+            <p>Upload a new Keras model (.h5) and matching labels (.txt). The existing active model will be
+                automatically backed up.</p>
 
-            <label for="notes">Notes / What's new</label>
-            <textarea id="notes" name="notes" placeholder="Describe the new words, improvements, or training changes." required></textarea>
-
-            <div class="form-grid">
-                <div>
-                    <label for="model_file">Model File (.h5)</label>
-                    <input type="file" id="model_file" name="model_file" accept=".h5" required>
-                    <div class="note">Replaces the existing model file.</div>
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="update">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="model_file">Model File (.h5)</label>
+                        <input type="file" id="model_file" name="model_file" accept=".h5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="labels_file">Labels File (.txt)</label>
+                        <input type="file" id="labels_file" name="labels_file" accept=".txt" required>
+                    </div>
                 </div>
-                <div>
-                    <label for="labels_file">Labels File (.txt)</label>
-                    <input type="file" id="labels_file" name="labels_file" accept=".txt" required>
-                    <div class="note">Line-separated labels matching the model outputs.</div>
-                </div>
-            </div>
+                <button type="submit" class="btn-action btn-primary">Publish Updates</button>
+            </form>
+        </div>
 
-            <p class="note">Tip: Use the correct pairing: dynamic model with dynamic_labels.txt, spelling model with labels.txt.</p>
-            <button type="submit" class="btn-primary">Upload and Publish</button>
-        </form>
+        <div class="admin-card">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+                Rollback to Previous Version
+            </h2>
+            <p>Restore a model that was previously backed up. Ensure no active practice sessions are running.</p>
 
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-
-        <h2 style="color: #4c51bf; margin-bottom: 12px;">Rollback to Previous Model</h2>
-        <p class="subtle">Select a backup to restore. Current files are backed up before rollback.</p>
-        <form method="POST">
-            <input type="hidden" name="action" value="rollback">
-            <div class="form-grid">
-                <div>
-                    <label for="rollback_model_type">Model Type</label>
-                    <select id="rollback_model_type" name="rollback_model_type" required>
-                        <option value="dynamic">Dynamic Model</option>
-                        <option value="spelling">Spelling Model</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="backup_name">Backup</label>
+            <form method="POST">
+                <input type="hidden" name="action" value="rollback">
+                <div class="form-group" style="max-width: 400px;">
+                    <label for="backup_name">Select Backup</label>
                     <select id="backup_name" name="backup_name" required>
-                        <option value="" disabled selected>Select a backup</option>
-                        {% for b in dynamic_backups %}
-                            <option value="{{ b.name }}">Dynamic: {{ b.name }}</option>
-                        {% endfor %}
+                        <option value="" disabled selected>Choose a backup timestamp...</option>
                         {% for b in spelling_backups %}
-                            <option value="{{ b.name }}">Spelling: {{ b.name }}</option>
+                        <option value="{{ b.name }}">{{ b.name }}</option>
                         {% endfor %}
                     </select>
-                    <div class="note">Backups live in Model/Backup Model/</div>
                 </div>
+                <button type="submit" class="btn-action btn-danger">Apply Rollback</button>
+            </form>
+        </div>
+        <div class="admin-card">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                Manage Users
+            </h2>
+            <p>Add new accounts or modify privileges of existing ones. The main Admin account cannot be deleted or
+                demoted.</p>
+
+            <form method="POST" class="add-user-form"
+                style="margin-bottom: 2rem; background: rgba(0,0,0,0.1); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                <input type="hidden" name="action" value="add_user">
+                <div class="form-grid" style="align-items: end;">
+                    <div class="form-group">
+                        <label for="new_username">Username</label>
+                        <input type="text" id="new_username" name="new_username" class="form-input" minlength="3"
+                            required placeholder="New user">
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">Password</label>
+                        <input type="password" id="new_password" name="new_password" class="form-input" minlength="6"
+                            required placeholder="Min 6 chars">
+                    </div>
+                    <div class="form-group"
+                        style="flex-direction: row; align-items: center; gap: 0.5rem; height: 100%; padding-bottom: 0.5rem;">
+                        <input type="checkbox" id="is_admin" name="is_admin" style="width: auto;">
+                        <label for="is_admin" style="margin: 0; cursor: pointer;">Admin Access</label>
+                    </div>
+                    <button type="submit" class="btn-action btn-primary" style="margin: 0;">Add User</button>
+                </div>
+            </form>
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                    <thead>
+                        <tr
+                            style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); text-align: left;">
+                            <th style="padding: 1rem 0.5rem; font-weight: 500;">ID</th>
+                            <th style="padding: 1rem 0.5rem; font-weight: 500;">Username</th>
+                            <th style="padding: 1rem 0.5rem; font-weight: 500;">Role</th>
+                            <th style="padding: 1rem 0.5rem; font-weight: 500; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 1rem 0.5rem; color: var(--text-muted);">#{{ u.id }}</td>
+                            <td style="padding: 1rem 0.5rem; font-weight: 500;">{{ u.username }}</td>
+                            <td style="padding: 1rem 0.5rem;">
+                                {% if u.is_admin %}
+                                <span
+                                    style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">Admin</span>
+                                {% else %}
+                                <span
+                                    style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.8rem;">User</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem 0.5rem; text-align: right;">
+                                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                                    {% if u.username != 'Admin' and u.id != session.get('user_id') %}
+                                    <form method="POST" style="margin: 0;">
+                                        <input type="hidden" name="action" value="toggle_admin">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <button type="submit"
+                                            style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                                            {{ 'Demote' if u.is_admin else 'Make Admin' }}
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="margin: 0;"
+                                        onsubmit="return confirm('Are you sure you want to delete user {{ u.username }}?');">
+                                        <input type="hidden" name="action" value="delete_user">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <button type="submit"
+                                            style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <span
+                                        style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Protected</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <button type="submit" class="btn-primary" style="margin-top: 12px;">Rollback</button>
-        </form>
+        </div>
     </div>
 </body>
+
 </html>
