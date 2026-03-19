@@ -9,7 +9,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 import shutil
+import csv
+import threading
 from datetime import datetime
+
+# --- MACHINE LEARNING & TRAINER IMPORTS ---
+import mediapipe as mp
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.utils import to_categorical
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here-change-in-production'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -36,6 +47,28 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# Dataset path for Trainer Module
+dataset_dir = os.path.join(base_dir, 'dataset')
+os.makedirs(dataset_dir, exist_ok=True)
+csv_filepath = os.path.join(dataset_dir, 'asl_mediapipe_keypoints_dataset.csv')
+
+# MediaPipe hands setup for Trainer Module
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=1)
+mp_drawing = mp.solutions.drawing_utils
+
+def get_normalized_landmarks(hand_landmarks, flip_x=False):
+    # Extract 21 points (x, y, z) relative to wrist (index 0)
+    landmarks = []
+    base_x, base_y, base_z = hand_landmarks.landmark[0].x, hand_landmarks.landmark[0].y, hand_landmarks.landmark[0].z
+    for lm in hand_landmarks.landmark:
+        x_val = lm.x - base_x
+        if flip_x:
+            x_val = -x_val  # Mirror the X coordinate
+        landmarks.extend([x_val, lm.y - base_y, lm.z - base_z])
+    return landmarks
+
+
 # Database Models
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,6 +78,8 @@ class User(db.Model):
     camera_index = db.Column(db.Integer, default=0)
     is_admin = db.Column(db.Boolean, default=False)
     tutorial_completed = db.Column(db.Boolean, default=False)
+    security_question = db.Column(db.String(200), nullable=True)
+    security_answer_hash = db.Column(db.String(200), nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -52,8 +87,24 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def set_security_answer(self, answer):
+        self.security_answer_hash = generate_password_hash(answer.strip().lower())
+
+    def check_security_answer(self, answer):
+        if not self.security_answer_hash:
+            return False
+        return check_password_hash(self.security_answer_hash, answer.strip().lower())
+
 with app.app_context():
     db.create_all()
+    # Schema Migration for newly added columns
+    try:
+        db.session.execute(db.text('ALTER TABLE user ADD COLUMN security_question VARCHAR(200)'))
+        db.session.execute(db.text('ALTER TABLE user ADD COLUMN security_answer_hash VARCHAR(200)'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        pass
     # Ensure Admin user exists
     admin_user = User.query.filter_by(username='Admin').first()
     if not admin_user:
@@ -70,53 +121,25 @@ with app.app_context():
 base_dir = os.path.abspath(os.path.dirname(__file__))
 active_mode = "spelling"  # Default mode
 
-# Model Paths
-spelling_model_path = os.path.join(base_dir, "Model", "AtoZ.h5")
-spelling_labels_path = os.path.join(base_dir, "Model", "labelsAtoZ.txt")
-words_model_path = os.path.join(base_dir, "Model", "dynamic_model.h5")
-words_labels_path = os.path.join(base_dir, "Model", "dynamic_labels.txt")
-
-detector = HandDetector(maxHands=1, detectionCon=0.8)
+# Model Paths are natively deprecated in favor of MediaPipe's custom implementation
+detector = HandDetector(maxHands=1, detectionCon=0.8) # Keep for any loose dependencies
 classifier = None
 labels = []
 
 def load_model(mode):
-    global classifier, labels, active_mode
+    global active_mode
     active_mode = mode
     
-    if mode == "spelling":
-        model_p = spelling_model_path
-        labels_p = spelling_labels_path
-    elif mode == "words":
-        model_p = words_model_path
-        labels_p = words_labels_path
-    else:
-        return False
-        
-    try:
-        # Load labels
-        with open(labels_p, 'r') as f:
-            lines = f.readlines()
-            if mode == "spelling":
-                # Spelling labels have format "0 A"
-                labels = [line.strip().split(" ")[1] if " " in line else line.strip() for line in lines if line.strip()]
-            else:
-                # Word labels are just plain text lines
-                labels = [line.strip() for line in lines if line.strip()]
-                
-        # Load classification model
-        classifier = Classifier(model_p, labels_p)
-        print(f"✅ Successfully loaded {mode} model")
+    # We natively bridge the legacy route to our active custom model now
+    success = load_custom_model()
+    if success:
+        print(f"✅ Successfully piped {mode} routing to MediaPipe new_custom_model.h5")
         return True
-    except Exception as e:
-        print(f"❌ Error loading {mode} model: {str(e)}")
-        # Fallback to simple generic labels if model missing
-        labels = ["A", "B", "C", "D"] if mode == "spelling" else ["Word1", "Word2"]
-        classifier = None
+    else:
+        print(f"❌ Error loading {mode} model! Custom model not found.")
         return False
 
-# Load default model on startup
-load_model(active_mode)
+
 
 # Global variables
 offset = 30
@@ -131,6 +154,17 @@ practice_active = False
 camera_active = True
 current_camera_index = 0
 
+# Trainer Module Globals
+camera_mode = 'training_idle'  # spelling, words, training_idle, training_record, testing
+is_recording = False
+is_testing = False
+is_training = False
+current_label = ""
+frames_recorded = 0
+target_frames = 100
+custom_model = None
+custom_labels = []
+training_log = []
 
 # Login required decorator
 def login_required(f):
@@ -145,13 +179,29 @@ def login_required(f):
 
 def generate_frames():
     global current_prediction, confidence_scores, camera_active, current_camera_index
+    global camera_mode, is_recording, is_testing, current_label, frames_recorded, target_frames, custom_model, custom_labels
 
     cap = None
 
     while True:
         # Check if camera should be active and reinitialize if needed
         if camera_active and (cap is None or not cap.isOpened()):
-            cap = cv2.VideoCapture(current_camera_index)
+            # 1. Try with CAP_DSHOW for faster Windows init
+            cap = cv2.VideoCapture(current_camera_index, cv2.CAP_DSHOW)
+            
+            # 2. Try without CAP_DSHOW as fallback
+            if not cap.isOpened():
+                cap = cv2.VideoCapture(current_camera_index)
+                
+            # 3. Try Auto-Discovery on other indexes if current fails
+            if not cap.isOpened():
+                for idx in range(3):
+                    if idx != current_camera_index:
+                        cap = cv2.VideoCapture(idx)
+                        if cap.isOpened():
+                            current_camera_index = idx
+                            break
+                            
             if not cap.isOpened():
                 # Return a black frame with error message
                 black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -159,8 +209,12 @@ def generate_frames():
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                 ret, buffer = cv2.imencode('.jpg', black_frame)
                 frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                try:
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                except GeneratorExit:
+                    if cap is not None: cap.release()
+                    raise
                 continue
 
         if not camera_active:
@@ -174,8 +228,12 @@ def generate_frames():
                         cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
             ret, buffer = cv2.imencode('.jpg', black_frame)
             frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            try:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            except GeneratorExit:
+                if cap is not None: cap.release()
+                raise
             continue
 
         success, img = cap.read()
@@ -184,108 +242,138 @@ def generate_frames():
             continue
 
         imgOutput = img.copy()
-        hands, img = detector.findHands(img)
 
-        if hands:
-            hand = hands[0]
-            x, y, w, h = hand['bbox']
-
-            imgWhite = np.ones((imgSize, imgSize, 3), np.uint8) * 255
-
-            # Safety crop check with padding instead of cutting off
-            # This ensures the hand isn't distorted when it's near the edge of the frame
-            y1 = y - offset
-            y2 = y + h + offset
-            x1 = x - offset
-            x2 = x + w + offset
-
-            # Calculate padding needed if box goes outside image
-            pad_top = max(0, -y1)
-            pad_bottom = max(0, y2 - img.shape[0])
-            pad_left = max(0, -x1)
-            pad_right = max(0, x2 - img.shape[1])
-
-            # Apply cropping (constrained to image boundaries)
-            y1_safe = max(0, y1)
-            y2_safe = min(img.shape[0], y2)
-            x1_safe = max(0, x1)
-            x2_safe = min(img.shape[1], x2)
+        # ---------------------------------------------
+        # BRANCH 1: NORMAL TRANSLATION MODE (MediaPipe Custom)
+        # ---------------------------------------------
+        if camera_mode == 'translation':
+            imgOutput = cv2.flip(imgOutput, 1) # Mirroring for user friendliness
+            rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
+            results = hands.process(rgb_img)
             
-            imgCrop = img[y1_safe:y2_safe, x1_safe:x2_safe]
-
-            if imgCrop.size == 0:
-                continue
-                
-            # Pad the cropped image back to the expected size so aspect ratio is preserved
-            if pad_top > 0 or pad_bottom > 0 or pad_left > 0 or pad_right > 0:
-                imgCrop = cv2.copyMakeBorder(imgCrop, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=(0,0,0))
-                
-            aspectRatio = imgCrop.shape[0] / imgCrop.shape[1] if imgCrop.shape[1] > 0 else 1
-            prediction = None
-            index = 0
-
-            # More robust resizing and centering logic
-            if aspectRatio > 1:
-                k = imgSize / imgCrop.shape[0]
-                wCal = math.ceil(k * imgCrop.shape[1])
-
-                if wCal > 0:
-                    imgResize = cv2.resize(imgCrop, (wCal, imgSize))
-                    wGap = math.ceil((imgSize - wCal) / 2)
-                    # Safe placement into imgWhite
-                    place_width = min(imgResize.shape[1], imgSize - wGap)
-                    imgWhite[:, wGap:wGap + place_width] = imgResize[:, :place_width]
-            else:
-                k = imgSize / imgCrop.shape[1]
-                hCal = math.ceil(k * imgCrop.shape[0])
-
-                if hCal > 0:
-                    imgResize = cv2.resize(imgCrop, (imgSize, hCal))
-                    hGap = math.ceil((imgSize - hCal) / 2)
-                    # Safe placement into imgWhite
-                    place_height = min(imgResize.shape[0], imgSize - hGap)
-                    imgWhite[hGap:hGap + place_height, :] = imgResize[:place_height, :]
-            
-            try:
-                # Make prediction if classifier is loaded
-                if classifier:
-                    prediction, index = classifier.getPrediction(imgWhite, draw=False)
+            if results.multi_hand_landmarks and results.multi_handedness:
+                for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                    hand_type = handedness.classification[0].label
                     
-                    if 0 <= index < len(labels):
-                        current_prediction = labels[index]
-                        
-                        # Store simulated confidence (Classifier in cvzone doesn't return raw prob array by default)
-                        # So we generate a mock confidence array with the dominant class having high confidence
-                        mock_conf = [0.0] * len(labels)
-                        mock_conf[index] = 0.95 
-                        confidence_scores = mock_conf
-                        
-                        # Add aesthetic UI drawing on frame
-                        cv2.rectangle(imgOutput, (x - offset, y - offset - 50),
-                                      (x - offset + 90, y - offset - 50 + 50), (255, 0, 255), cv2.FILLED)
-                        cv2.putText(imgOutput, current_prediction, (x, y - 26),
-                                    cv2.FONT_HERSHEY_COMPLEX, 1.7, (255, 255, 255), 2)
-                        cv2.rectangle(imgOutput, (x - offset, y - offset),
-                                      (x + w + offset, y + h + offset), (255, 0, 255), 4)
-                else:
-                    cv2.putText(imgOutput, "Model not loaded", (x, y - 26),
-                                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
-
-            except Exception as e:
-                print(f"Error during prediction: {e}")
-                current_prediction = "Prediction Error"
+                    # Mirror Right Hand coords to Left Hand geometry for standard detection
+                    flip_x = (hand_type == 'Right')
+                    
+                    mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                    landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
+                    
+                    if custom_model is not None and len(custom_labels) > 0:
+                        try:
+                            prediction = custom_model.predict(np.array([landmarks]), verbose=0)
+                            class_id = np.argmax(prediction)
+                            pred_confidence = prediction[0][class_id]
+                            
+                            if pred_confidence > 0.5:
+                                current_prediction = custom_labels[class_id]
+                                confidence_scores = prediction[0].tolist()
+                                cv2.putText(imgOutput, f"{current_prediction} ({pred_confidence*100:.1f}%)", (50, 50),
+                                            cv2.FONT_HERSHEY_COMPLEX, 1.2, (0, 255, 0), 2)
+                            else:
+                                current_prediction = "Low confidence"
+                                confidence_scores = []
+                        except Exception as e:
+                            print(f"Error predicting: {e}")
+                            current_prediction = "Prediction Error"
+                            confidence_scores = []
+                    else:
+                        current_prediction = "Model not loaded"
+                        confidence_scores = []
+                        cv2.putText(imgOutput, "Model not loaded. Train in Trainer Module.", (20, 50),
+                                    cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 0, 255), 2)
+            else:
+                current_prediction = "No hand detected"
                 confidence_scores = []
-        else:
-            current_prediction = "No hand detected"
-            confidence_scores = []
+                
+        # ---------------------------------------------
+        # BRANCH 2: TRAINING / TESTING MODE (MediaPipe)
+        # ---------------------------------------------
+        elif camera_mode in ['training_idle', 'testing']:
+            imgOutput = cv2.flip(imgOutput, 1) # Selfie view for training
+            rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
+            results = hands.process(rgb_img)
+            
+            pred_label = None
+            pred_confidence = 0.0
 
-        # Encode frame
+            if results.multi_hand_landmarks and results.multi_handedness:
+                for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                    hand_type = handedness.classification[0].label
+                    
+                    # Standardize all data to Left Hand geometry by mirroring Right hands
+                    flip_x = (hand_type == 'Right')
+                    
+                    mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                    landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
+
+                    if is_recording and frames_recorded < target_frames:
+                        with open(csv_filepath, mode='a', newline='') as f:
+                            writer = csv.writer(f)
+                            row = [current_label] + landmarks
+                            writer.writerow(row)
+                        
+                        frames_recorded += 1
+                        if frames_recorded >= target_frames:
+                            is_recording = False
+
+                    elif is_testing and custom_model is not None and custom_labels:
+                        try:
+                            prediction = custom_model.predict(np.array([landmarks]), verbose=0)
+                            class_id = np.argmax(prediction)
+                            pred_confidence = prediction[0][class_id]
+                            if pred_confidence > 0.5:
+                                pred_label = custom_labels[class_id]
+                        except Exception:
+                            pass
+            
+            # Overlay UI instructions over the training feed
+            if is_recording:
+                cv2.putText(imgOutput, f"Recording: {frames_recorded}/{target_frames}", (10, 50), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            elif is_testing:
+                if pred_label:
+                    cv2.putText(imgOutput, f"Sign: {pred_label} ({pred_confidence*100:.1f}%)", (10, 50), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                else:
+                    cv2.putText(imgOutput, "Testing mode: Waiting for sign...", (10, 50), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            else:
+                cv2.putText(imgOutput, "Ready. Show sign to begin.", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+        # --- DEBUG OVERLAY ---
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        cv2.putText(imgOutput, f"Stream: {timestamp} Mode: {camera_mode}", (10, imgOutput.shape[0] - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        
+        # Check for black frame
+        if np.mean(imgOutput) < 5:
+            cv2.putText(imgOutput, "DARK FRAME DETECTED - CHECK CAMERA", (50, 240),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+        # Encode unified frame
         ret, buffer = cv2.imencode('.jpg', imgOutput)
         frame = buffer.tobytes()
 
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        try:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        except GeneratorExit:
+            if cap is not None: cap.release()
+            raise
 
+
+@app.context_processor
+def inject_user():
+    context = {'username': '', 'is_admin': False}
+    if 'user_id' in session:
+        user = db.session.get(User, session['user_id'])
+        if user:
+            context['username'] = user.username
+            context['is_admin'] = user.is_admin
+    return context
 
 @app.route('/')
 def home():
@@ -303,10 +391,12 @@ def register():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
+        security_question = request.form.get('security_question', '').strip()
+        security_answer = request.form.get('security_answer', '').strip()
 
         # Validation
-        if not username or not password:
-            flash('Username and password are required', 'error')
+        if not username or not password or not security_question or not security_answer:
+            flash('All fields are required', 'error')
             return render_template('register.html')
 
         if len(username) < 3:
@@ -328,8 +418,9 @@ def register():
             return render_template('register.html')
 
         # Create new user
-        new_user = User(username=username)
+        new_user = User(username=username, security_question=security_question)
         new_user.set_password(password)
+        new_user.set_security_answer(security_answer)
 
         try:
             db.session.add(new_user)
@@ -342,6 +433,60 @@ def register():
             return render_template('register.html')
 
     return render_template('register.html')
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+
+    step = 1
+    username = ''
+    question = ''
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        username = request.form.get('username', '').strip()
+
+        if action == 'verify_user':
+            user = User.query.filter_by(username=username).first()
+            if not user:
+                flash('User not found.', 'error')
+            elif not user.security_question:
+                flash('This account does not have a security question set up. Please contact an admin.', 'error')
+            else:
+                step = 2
+                question = user.security_question
+
+        elif action == 'reset_password':
+            user = User.query.filter_by(username=username).first()
+            if not user:
+                flash('User not found.', 'error')
+                return render_template('forgot_password.html', step=1)
+
+            answer = request.form.get('security_answer', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_password', '')
+
+            if not user.check_security_answer(answer):
+                flash('Incorrect security answer.', 'error')
+                step = 2
+                question = user.security_question
+            elif len(new_password) < 6:
+                flash('New password must be at least 6 characters.', 'error')
+                step = 2
+                question = user.security_question
+            elif new_password != confirm_password:
+                flash('Passwords do not match.', 'error')
+                step = 2
+                question = user.security_question
+            else:
+                user.set_password(new_password)
+                db.session.commit()
+                flash('Password reset successfully. Please login with your new password.', 'success')
+                return redirect(url_for('login'))
+
+    return render_template('forgot_password.html', step=step, username=username, question=question)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -381,7 +526,7 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def index():
-    global camera_active, current_camera_index
+    global camera_active, current_camera_index, camera_mode
     user = User.query.get(session['user_id'])
 
     if user is None:
@@ -391,6 +536,8 @@ def index():
 
     if not user.tutorial_completed:
         return redirect(url_for('tutorial'))
+
+    camera_mode = 'translation'
 
     camera_active = user.camera_enabled
     current_camera_index = user.camera_index
@@ -409,6 +556,8 @@ def profile():
 
     if request.method == 'POST':
         new_username = request.form.get('username', '').strip()
+        security_question = request.form.get('security_question', '').strip()
+        security_answer = request.form.get('security_answer', '').strip()
 
         if not new_username:
             flash('Username cannot be empty', 'error')
@@ -426,6 +575,10 @@ def profile():
 
         user.username = new_username
         session['username'] = new_username
+        
+        if security_question and security_answer:
+            user.security_question = security_question
+            user.set_security_answer(security_answer)
 
         try:
             db.session.commit()
@@ -499,11 +652,17 @@ def tutorial():
 @app.route('/quiz')
 @login_required
 def quiz():
+    global camera_active, current_camera_index, camera_mode
     user = db.session.get(User, session['user_id'])
     if user is None:
         session.clear()
         return redirect(url_for('login'))
-    return render_template('quiz.html', username=session.get('username', ''), is_admin=user.is_admin)
+        
+    camera_active = user.camera_enabled
+    current_camera_index = user.camera_index
+    camera_mode = 'translation'
+    
+    return render_template('quiz.html', username=session.get('username', ''), camera_active=camera_active, is_admin=user.is_admin)
 
 
 @app.route('/complete_tutorial', methods=['POST'])
@@ -515,6 +674,7 @@ def complete_tutorial():
         db.session.commit()
         return jsonify({'success': True})
     return jsonify({'success': False}), 400
+
 
 
 @app.route('/video_feed')
@@ -634,91 +794,231 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-MODEL_BACKUP_DIR = os.path.join(base_dir, "Model", "Backup Model")
-ALLOWED_MODEL_EXT = {"h5"}
-ALLOWED_LABEL_EXT = {"txt"}
 
-def has_allowed_extension(filename, allowed_ext):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_ext
+# ==========================================
+# TRAINER MODULE API ENDPOINTS (ADMIN ONLY)
+# ==========================================
 
-def backup_existing_model_files():
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_dir = os.path.join(MODEL_BACKUP_DIR, timestamp)
-    os.makedirs(backup_dir, exist_ok=True)
-    if os.path.exists(spelling_model_path):
-        shutil.copy2(spelling_model_path, os.path.join(backup_dir, os.path.basename(spelling_model_path)))
-    if os.path.exists(spelling_labels_path):
-        shutil.copy2(spelling_labels_path, os.path.join(backup_dir, os.path.basename(spelling_labels_path)))
-    return backup_dir
+def load_custom_model():
+    global custom_model, custom_labels, labels
+    model_path = os.path.join(base_dir, 'Model', 'new_custom_model.h5')
+    labels_path = os.path.join(base_dir, 'Model', 'new_custom_labels.txt')
+    
+    if os.path.exists(model_path) and os.path.exists(labels_path):
+        custom_model = tf.keras.models.load_model(model_path)
+        with open(labels_path, 'r') as f:
+            custom_labels = [line.strip() for line in f.readlines()]
+            labels = custom_labels
+        return True
+    return False
 
-def list_model_backups():
-    backups = []
-    if os.path.isdir(MODEL_BACKUP_DIR):
-        for name in sorted(os.listdir(MODEL_BACKUP_DIR), reverse=True):
-            b_path = os.path.join(MODEL_BACKUP_DIR, name)
-            if os.path.isdir(b_path):
-                backups.append({"name": name})
-    return backups
+def train_model_thread():
+    global is_training, training_log
+    
+    try:
+        training_log.append("Reading accumulated CSV dataset...")
+        
+        if not os.path.exists(csv_filepath):
+            training_log.append("Error: Dataset CSV not found.")
+            is_training = False
+            return
+            
+        labels_list = []
+        features_list = []
+        with open(csv_filepath, 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if len(row) > 1:
+                    # Skip header row if present
+                    if row[0].lower() == 'label' or not row[1].replace('.', '', 1).replace('-', '', 1).isdigit():
+                        continue
+                    # Automatically detect if label is at the start or end
+                    try:
+                        float(row[-1])
+                        label = row[0]
+                        features = [float(x) for x in row[1:64]]
+                    except ValueError:
+                        label = row[-1]
+                        features = [float(x) for x in row[0:63]]
+                    
+                    labels_list.append(label)
+                    features_list.append(features)
+                    
+        if len(labels_list) == 0:
+            training_log.append("Dataset is empty. Record data first.")
+            return
 
-def restore_model_from_backup(backup_name):
-    backup_dir = os.path.join(MODEL_BACKUP_DIR, backup_name)
-    m_path = os.path.join(backup_dir, os.path.basename(spelling_model_path))
-    l_path = os.path.join(backup_dir, os.path.basename(spelling_labels_path))
-    if os.path.exists(m_path):
-        shutil.copy2(m_path, spelling_model_path)
-    if os.path.exists(l_path):
-        shutil.copy2(l_path, spelling_labels_path)
+        unique_labels = sorted(list(set(labels_list)))
+        label_to_id = {label: i for i, label in enumerate(unique_labels)}
+        
+        y = np.array([label_to_id[label] for label in labels_list])
+        X = np.array(features_list)
+        
+        training_log.append(f"Loaded {len(X)} samples across {len(unique_labels)} signs: {', '.join(unique_labels)}")
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        training_log.append("Building fast MLP Landmark Model...")
+        model = Sequential([
+            Dense(128, activation='relu', input_shape=(63,)),
+            Dropout(0.2),
+            Dense(64, activation='relu'),
+            Dense(len(unique_labels), activation='softmax')
+        ])
+        
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        
+        training_log.append("Training Model...")
+        model.fit(X_train, y_train, epochs=50, validation_data=(X_test, y_test), batch_size=32, verbose=0)
+        
+        loss, acc = model.evaluate(X_test, y_test, verbose=0)
+        training_log.append(f"Training Custom Model complete! Validation Accuracy: {acc*100:.2f}%")
+        
+        output_model_path = os.path.join(base_dir, 'Model', 'new_custom_model.h5')
+        output_labels_path = os.path.join(base_dir, 'Model', 'new_custom_labels.txt')
+        
+        os.makedirs(os.path.dirname(output_model_path), exist_ok=True)
+        model.save(output_model_path)
+        
+        with open(output_labels_path, 'w') as f:
+            for lbl in unique_labels:
+                f.write(f"{lbl}\n")
+                
+        training_log.append(f"Model successfully saved to {output_model_path}")
+        training_log.append("Done. Ready for use!")
+        
+    except Exception as e:
+        training_log.append(f"Error during training: {str(e)}")
+        print(e)
+    finally:
+        is_training = False
 
-def reload_model_from_disk():
-    # Only reload if the active mode is spelling
-    if active_mode == "spelling":
-        load_model("spelling")
+
+@app.route('/trainer')
+@admin_required
+def trainer():
+    """Renders the Standalone Trainer UI inside the main app."""
+    global camera_mode
+    camera_mode = 'training_idle'
+    return render_template('trainer.html', username=session.get('username', ''), is_admin=True)
+
+@app.route('/start_recording', methods=['POST'])
+@admin_required
+def start_recording():
+    global is_recording, current_label, frames_recorded, target_frames, camera_mode
+    
+    data = request.json
+    label = data.get('label', '').strip().upper()
+    frames = data.get('frames', 100)
+    
+    if not label:
+        return jsonify({'success': False, 'error': 'Label is required'})
+        
+    current_label = label
+    target_frames = int(frames)
+    frames_recorded = 0
+    is_recording = True
+    camera_mode = 'training_idle'
+    
+    return jsonify({'success': True, 'message': f'Started recording for label: {label}'})
+
+@app.route('/get_status')
+@admin_required
+def get_status():
+    return jsonify({
+        'is_recording': is_recording,
+        'frames_recorded': frames_recorded,
+        'target_frames': target_frames,
+        'current_label': current_label
+    })
+
+@app.route('/toggle_testing', methods=['POST'])
+@admin_required
+def toggle_testing():
+    global is_testing, custom_model, custom_labels, camera_mode
+    
+    data = request.json
+    action = data.get('action')
+    
+    if action == 'start':
+        if not load_custom_model():
+            return jsonify({'success': False, 'error': 'No trained model found! Please train a model first.'})
+        is_testing = True
+        camera_mode = 'testing'
+    else:
+        is_testing = False
+        camera_mode = 'training_idle'
+        
+    return jsonify({'success': True, 'is_testing': is_testing})
+
+@app.route('/train_model', methods=['POST'])
+@admin_required
+def train_model():
+    global is_training, training_log
+    
+    if is_training:
+        return jsonify({'success': False, 'error': 'Training is already in progress'})
+        
+    is_training = True
+    training_log = []
+    
+    # Start training in background thread
+    thread = threading.Thread(target=train_model_thread)
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({'success': True, 'message': 'Training started in background'})
+
+@app.route('/training_status')
+@admin_required
+def get_training_status():
+    return jsonify({
+        'is_training': is_training,
+        'log': training_log
+    })
+
+@app.route('/delete_label', methods=['POST'])
+@admin_required
+def delete_label():
+    """Removes all data for a specific label from the dataset CSV."""
+    data = request.json
+    label_to_delete = data.get('label', '').strip().upper()
+    
+    if not label_to_delete:
+        return jsonify({'success': False, 'error': 'Label is required'})
+        
+    if not os.path.exists(csv_filepath):
+        return jsonify({'success': False, 'error': 'Dataset file not found'})
+        
+    try:
+        rows = []
+        deleted_count = 0
+        with open(csv_filepath, 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if len(row) > 0:
+                    # Check first or last column for label
+                    if row[0].upper() == label_to_delete or row[-1].upper() == label_to_delete:
+                        deleted_count += 1
+                        continue
+                    rows.append(row)
+                    
+        with open(csv_filepath, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(rows)
+            
+        return jsonify({
+            'success': True, 
+            'message': f'Deleted {deleted_count} frames for label: {label_to_delete}'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/admin', methods=['GET', 'POST'])
 @admin_required
 def admin_dashboard():
     action = (request.form.get('action', '') or '').lower() if request.method == 'POST' else ''
 
-    if action == 'rollback':
-        backup_name = (request.form.get('backup_name', '') or '').strip()
-        if not backup_name:
-            flash('Choose a backup to restore.', 'error')
-            return redirect(url_for('admin_dashboard'))
-        try:
-            backup_existing_model_files()
-            restore_model_from_backup(backup_name)
-            reload_model_from_disk()
-            flash('Rollback completed successfully.', 'success')
-        except Exception as exc:
-            flash(f'Rollback failed: {exc}', 'error')
-        return redirect(url_for('admin_dashboard'))
-
-    if request.method == 'POST' and action == 'update':
-        model_file = request.files.get('model_file')
-        labels_file = request.files.get('labels_file')
-
-        if not model_file or not model_file.filename:
-            flash('Upload a .h5 model file.', 'error')
-            return redirect(url_for('admin_dashboard'))
-        if not labels_file or not labels_file.filename:
-            flash('Upload a .txt labels file.', 'error')
-            return redirect(url_for('admin_dashboard'))
-        if not has_allowed_extension(model_file.filename, ALLOWED_MODEL_EXT):
-            flash('Model file must be .h5', 'error')
-            return redirect(url_for('admin_dashboard'))
-        if not has_allowed_extension(labels_file.filename, ALLOWED_LABEL_EXT):
-            flash('Labels file must be .txt', 'error')
-            return redirect(url_for('admin_dashboard'))
-
-        try:
-            backup_existing_model_files()
-            model_file.save(spelling_model_path)
-            labels_file.save(spelling_labels_path)
-            reload_model_from_disk()
-            flash('Model and labels updated successfully.', 'success')
-        except Exception as exc:
-            flash(f'Failed to update model: {exc}', 'error')
-        return redirect(url_for('admin_dashboard'))
 
     if request.method == 'POST' and action == 'add_user':
         new_username = request.form.get('new_username', '').strip()
@@ -772,15 +1072,16 @@ def admin_dashboard():
                 flash(f"User '{user_to_delete.username}' deleted.", 'success')
         return redirect(url_for('admin_dashboard'))
 
-    backups = list_model_backups()
     all_users = User.query.order_by(User.id).all()
     return render_template(
         'admin_dashboard.html',
         username=session.get('username', ''),
         is_admin=True,
-        spelling_backups=backups,
         users=all_users
     )
+
+# Load default model natively on startup after all globals have initialized
+load_model(active_mode)
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True)

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Dataset & Trainer - Bridge Sign</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            opacity: 0.15;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #4f46e5;
+            top: -100px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: #2563eb;
+            bottom: -200px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            margin: 1.5rem;
+            z-index: 10;
+            position: relative;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+        }
+
+        .navbar-menu {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .navbar-item {
+            text-decoration: none;
+            color: #cbd5e1;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .navbar-item:hover {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .navbar-item.active {
+            color: #fff;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            white-space: nowrap;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            text-decoration: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            align-items: stretch;
+            height: calc(100vh - 120px);
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+        }
+
+        .left-col {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .right-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+        }
+
+        .video-feed {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            box-sizing: border-box;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-record {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-record:hover { opacity: 0.9; }
+
+        .btn-train {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-test {
+            background: var(--secondary);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .terminal {
+            background: #000;
+            color: #34d399;
+            font-family: monospace;
+            padding: 1rem;
+            border-radius: 8px;
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-light);
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        .labels-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+        <nav class="navbar glass-panel">
+        <div class="navbar-brand">Bridge Sign</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
+            {% if is_admin %}
+            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
+            {% endif %}
+        </div>
+        <div class="navbar-user">
+            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
+            <span>{{ username }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="left-col glass-panel">
+            <h2>Camera Feed</h2>
+            <img id="videoStream" src="{{ url_for('video_feed') }}" class="video-feed" alt="Trainer Feed">
+            <p style="color: var(--text-muted); text-align: center;">Make sure your hands are clearly visible in the frame.</p>
+        </div>
+
+        <div class="right-col glass-panel">
+            <h2>Dataset Recording</h2>
+            <div class="form-group">
+                <label for="label">Sign Label (e.g. A, B, Hello)</label>
+                <input type="text" id="label" class="form-input" placeholder="Enter class label">
+            </div>
+            
+            <button class="btn-action btn-record" id="recordBtn" onclick="startRecording()">Start Recording Data</button>
+            <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+            
+            <div class="form-group" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                <input type="text" id="deleteLabelInput" class="form-input" placeholder="Label to delete" style="flex: 1;">
+                <button class="btn-action btn-danger" style="width: auto; margin: 0;" onclick="deleteLabel()">Delete</button>
+            </div>
+
+            <hr style="border-color: rgba(255,255,255,0.1); width: 100%; margin: 1rem 0;">
+
+            <h2>Model Training</h2>
+            <div class="terminal" id="terminal">
+                > Trainer initialized.<br>
+            </div>
+
+            <button class="btn-action btn-train" id="trainBtn" onclick="trainModel()">Train New Model</button>
+            <button class="btn-action btn-test" id="testBtn" onclick="toggleTesting()">Test Trained Model</button>
+
+            <div class="labels-box">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Labels in the system:</strong></p>
+                <p id="currentLabelsText" style="color: #fff; font-weight: 500; font-size: 1rem; word-wrap: break-word;">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let recordingInterval;
+        let trainingInterval;
+        const term = document.getElementById('terminal');
+
+        function fetchSystemLabels() {
+            fetch('/get_dataset_labels')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('currentLabelsText').innerText = data.labels.join(', ') || 'No labels recorded yet.';
+                    } else {
+                        document.getElementById('currentLabelsText').innerText = 'Error loading labels.';
+                    }
+                });
+        }
+        window.addEventListener('DOMContentLoaded', fetchSystemLabels);
+
+        function startRecording() {
+            const label = document.getElementById('label').value.trim();
+            if (!label) { alert("Please enter a label!"); return; }
+            
+            document.getElementById('recordBtn').disabled = true;
+            document.getElementById('recordBtn').innerText = "Initializing...";
+
+            fetch('/start_recording', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label: label, frames: 100 })
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    document.getElementById('recordBtn').innerText = "Recording...";
+                    recordingInterval = setInterval(checkRecordingStatus, 500);
+                } else {
+                    alert(data.error);
+                    document.getElementById('recordBtn').disabled = false;
+                    document.getElementById('recordBtn').innerText = "Start Recording Data";
+                }
+            });
+        }
+
+        function checkRecordingStatus() {
+            fetch('/get_status').then(r => r.json()).then(data => {
+                if(data.is_recording) {
+                    const pct = (data.frames_recorded / data.target_frames) * 100;
+                    document.getElementById('progressBar').style.width = pct + '%';
+                } else if(!data.is_recording && data.frames_recorded > 0) {
+                    clearInterval(recordingInterval);
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('recordBtn').innerText = "Data Saved! Record again if needed";
+                    document.getElementById('recordBtn').disabled = false;
+                    fetchSystemLabels();
+                    setTimeout(() => {
+                        document.getElementById('recordBtn').innerText = "Start Recording Data";
+                        document.getElementById('progressBar').style.width = '0%';
+                    }, 3000);
+                }
+            });
+        }
+        
+        function deleteLabel() {
+            const lbl = document.getElementById('deleteLabelInput').value.trim();
+            if(!lbl) return;
+            fetch('/delete_label', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({label: lbl})
+            }).then(r => r.json()).then(data => {
+                if(data.success) {
+                    term.innerHTML += `> <span style="color:#ef4444">${data.message}</span><br>`;
+                    fetchSystemLabels();
+                } else {
+                    alert(data.error);
+                }
+                term.scrollTop = term.scrollHeight;
+            });
+        }
+
+        function trainModel() {
+            fetch('/train_model', { method: 'POST' }).then(r => r.json()).then(data => {
+                if(data.success) {
+                    term.innerHTML += "> Starting training via MediaPipe Keypoints...<br>";
+                    trainingInterval = setInterval(checkTrainingStatus, 1000);
+                    document.getElementById('trainBtn').disabled = true;
+                } else {
+                    term.innerHTML += `> <span style="color:red">${data.error}</span><br>`;
+                }
+                term.scrollTop = term.scrollHeight;
+            });
+        }
+
+        function checkTrainingStatus() {
+            fetch('/training_status').then(r => r.json()).then(data => {
+                term.innerHTML = "> Trainer Output:<br>";
+                data.log.forEach(l => { term.innerHTML += `> ${l}<br>`; });
+                term.scrollTop = term.scrollHeight;
+                if(!data.is_training) {
+                    clearInterval(trainingInterval);
+                    document.getElementById('trainBtn').disabled = false;
+                }
+            });
+        }
+
+        let isTesting = false;
+        function toggleTesting() {
+            const btn = document.getElementById('testBtn');
+            const action = isTesting ? 'stop' : 'start';
+            fetch('/toggle_testing', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: action})
+            }).then(r => r.json()).then(data => {
+                if(data.success) {
+                    isTesting = data.is_testing;
+                    if(isTesting) {
+                        btn.innerText = "Stop Testing Model";
+                        btn.style.background = "#ef4444";
+                    } else {
+                        btn.innerText = "Test Trained Model";
+                        btn.style.background = "var(--secondary)";
+                    }
+                } else { alert(data.error || "Must train model first!"); }
+            });
+        }
+    </script>
+</body>
+</html>

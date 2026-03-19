@@ -94,7 +94,9 @@
             padding: 1rem 2rem;
             margin: 1.5rem;
             z-index: 10;
-        }
+        
+        flex-wrap: nowrap;
+        overflow-x: auto;}
 
         .navbar-brand {
             font-size: 1.5rem;
@@ -118,7 +120,8 @@
             padding: 0.5rem 1rem;
             border-radius: 10px;
             transition: all 0.3s ease;
-        }
+        
+        white-space: nowrap;}
 
         .navbar-item:hover {
             color: var(--text-main);
@@ -314,18 +317,21 @@
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
 
-    <nav class="navbar glass-panel">
+        <nav class="navbar glass-panel">
         <div class="navbar-brand">Bridge Sign</div>
         <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
-            <a href="{{ url_for('tutorial') }}" class="navbar-item">Tutorial</a>
-            <a href="{{ url_for('quiz') }}" class="navbar-item">Quiz</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item">Settings</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item active">Admin</a>
+            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
+            {% if is_admin %}
+            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
+            {% endif %}
         </div>
         <div class="navbar-user">
-            <div class="user-avatar">{{ username[0].upper() }}</div>
+            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
             <span>{{ username }}</span>
             <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </div>
@@ -333,8 +339,8 @@
 
     <div class="container glass-panel">
         <div class="header">
-            <h1>Admin Dashboard</h1>
-            <p>Manage spelling model versions and backups</p>
+            <h1>Manage Users</h1>
+            <p>Manage access privileges to the platform.</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -345,58 +351,7 @@
         {% endif %}
         {% endwith %}
 
-        <div class="admin-card">
-            <h2>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                Publish New Model
-            </h2>
-            <p>Upload a new Keras model (.h5) and matching labels (.txt). The existing active model will be
-                automatically backed up.</p>
-
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="update">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="model_file">Model File (.h5)</label>
-                        <input type="file" id="model_file" name="model_file" accept=".h5" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="labels_file">Labels File (.txt)</label>
-                        <input type="file" id="labels_file" name="labels_file" accept=".txt" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn-action btn-primary">Publish Updates</button>
-            </form>
-        </div>
-
-        <div class="admin-card">
-            <h2>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                    <path d="M3 3v5h5" />
-                </svg>
-                Rollback to Previous Version
-            </h2>
-            <p>Restore a model that was previously backed up. Ensure no active practice sessions are running.</p>
-
-            <form method="POST">
-                <input type="hidden" name="action" value="rollback">
-                <div class="form-group" style="max-width: 400px;">
-                    <label for="backup_name">Select Backup</label>
-                    <select id="backup_name" name="backup_name" required>
-                        <option value="" disabled selected>Choose a backup timestamp...</option>
-                        {% for b in spelling_backups %}
-                        <option value="{{ b.name }}">{{ b.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn-action btn-danger">Apply Rollback</button>
-            </form>
-        </div>
+        
         <div class="admin-card">
             <h2>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

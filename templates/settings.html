@@ -98,7 +98,9 @@
             padding: 1rem 2rem;
             margin: 1.5rem;
             z-index: 10;
-        }
+        
+        flex-wrap: nowrap;
+        overflow-x: auto;}
 
         .navbar-brand {
             font-size: 1.5rem;
@@ -121,7 +123,8 @@
             padding: 0.5rem 1rem;
             border-radius: 10px;
             transition: all 0.3s ease;
-        }
+        
+        white-space: nowrap;}
 
         .navbar-item:hover {
             color: var(--text-main);
@@ -397,7 +400,9 @@
             .navbar {
                 flex-direction: column;
                 padding: 1rem;
-            }
+            
+        flex-wrap: nowrap;
+        overflow-x: auto;}
 
             .navbar-menu {
                 order: 3;
@@ -433,21 +438,22 @@
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
 
-    <nav class="navbar glass-panel">
+        <nav class="navbar glass-panel">
         <div class="navbar-brand">Bridge Sign</div>
         <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item">Dashboard</a>
-            <a href="{{ url_for('tutorial') }}" class="navbar-item">Tutorial</a>
-            <a href="{{ url_for('quiz') }}" class="navbar-item">Quiz</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item active">Settings</a>
-            {% if user.is_admin %}
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item">Admin</a>
+            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
+            {% if is_admin %}
+            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
             {% endif %}
         </div>
         <div class="navbar-user">
-            <div class="user-avatar">{{ user.username[0].upper() }}</div>
-            <span>{{ user.username }}</span>
+            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
+            <span>{{ username }}</span>
             <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </div>
     </nav>
