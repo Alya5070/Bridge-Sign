@@ -525,9 +525,9 @@
                         <input type="hidden" name="action" value="change_camera">
                         <select name="camera_index" class="form-select" required>
                             {% if available_cameras %}
-                            {% for cam_id in available_cameras %}
-                            <option value="{{ cam_id }}" {% if cam_id==user.camera_index %}selected{% endif %}>
-                                Capture Device {{ cam_id }}
+                            {% for cam in available_cameras %}
+                            <option value="{{ cam.index }}" {% if cam.index==user.camera_index %}selected{% endif %}>
+                                {{ cam.name }}
                             </option>
                             {% endfor %}
                             {% else %}
@@ -535,6 +535,14 @@
                             {% endif %}
                         </select>
                         <button type="submit" class="btn-action btn-secondary">Bind Device</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('refresh_cameras') }}" style="margin-top: 10px;">
+                        <button type="submit" class="btn-action btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                            </svg>
+                            Refresh List
+                        </button>
                     </form>
                 </div>
 

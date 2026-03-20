@@ -166,6 +166,57 @@ custom_model = None
 custom_labels = []
 training_log = []
 
+# Camera caching
+cached_cameras = []
+
+def get_camera_list():
+    global cached_cameras
+    
+    # If we already have a cached list and it's not empty, return it
+    if cached_cameras:
+        return cached_cameras
+        
+    print("Discovering available cameras via DirectShow...")
+    available_cameras = []
+    
+    try:
+        from pygrabber.dshow_graph import FilterGraph
+        graph = FilterGraph()
+        devices = graph.get_input_devices()
+        
+        # Filter out obvious non-camera or duplicate virtual interfaces
+        invalid_keywords = ['DFU', 'Virtual', 'Control', 'Render']
+        
+        for idx, name in enumerate(devices):
+            is_valid = True
+            for kw in invalid_keywords:
+                if kw.lower() in name.lower():
+                    is_valid = False
+                    break
+                    
+            if is_valid:
+                available_cameras.append({'index': idx, 'name': name})
+                    
+    except ImportError:
+        print("Warning: pygrabber not installed. Falling back to basic check.")
+        # Fallback to basic indexing if pygrabber isn't there
+        for i in range(5):
+            try:
+                cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+                if cap.isOpened():
+                    available_cameras.append({'index': i, 'name': f"Camera {i}"})
+                    cap.release()
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"Error enumerating cameras: {e}")
+        
+    # Cache and return
+    cached_cameras = available_cameras
+    print(f"Found {len(cached_cameras)} cameras: {cached_cameras}")
+    return cached_cameras
+
+
 # Login required decorator
 def login_required(f):
     @wraps(f)
@@ -177,77 +228,107 @@ def login_required(f):
     return decorated_function
 
 
+# Global camera object and lock for thread safety
+cap = None
+camera_lock = threading.Lock()
+active_index = -1
 def generate_frames():
     global current_prediction, confidence_scores, camera_active, current_camera_index
     global camera_mode, is_recording, is_testing, current_label, frames_recorded, target_frames, custom_model, custom_labels
-
-    cap = None
+    global cap, active_index
     
-    # Immediate yield to tell browser we are alive
-    status_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-    cv2.putText(status_frame, "Initializing Camera Stream...", (120, 240),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-    ret, buffer = cv2.imencode('.jpg', status_frame)
-    yield (b'--frame\r\n'
-           b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
+    dark_frame_count = 0
+    
     while True:
         try:
-            # Check if camera should be active and reinitialize if needed
-            if camera_active and (cap is None or not cap.isOpened()):
-                # 1. Try with CAP_DSHOW for faster Windows init
-                cap = cv2.VideoCapture(current_camera_index, cv2.CAP_DSHOW)
+            # Check if camera should be active and reinitialize if needed or if camera index changed
+            if camera_active and (cap is None or not cap.isOpened() or active_index != current_camera_index):
+                # Immediate yield to tell browser we are starting if not already
+                if cap is None:
+                    status_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                    cv2.putText(status_frame, "Initializing Camera Stream...", (120, 240),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+                    ret, buffer = cv2.imencode('.jpg', status_frame)
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+                with camera_lock:
+                    # Re-check inside lock to avoid double-init
+                    if cap is None or not cap.isOpened() or active_index != current_camera_index:
+                        if cap is not None:
+                            cap.release()
+                            cap = None
+                            
+                        print(f"Switching/Initializing camera to index {current_camera_index}...")
+                        # 1. Try default backend first
+                        cap = cv2.VideoCapture(current_camera_index)
+                        
+                        # 2. Try with CAP_DSHOW as fallback
+                        if cap is None or not cap.isOpened():
+                            cap = cv2.VideoCapture(current_camera_index, cv2.CAP_DSHOW)
+                        
+                        if cap.isOpened():
+                            active_index = current_camera_index
+                            # Small delay to let the driver stabilize
+                            threading.Event().wait(0.5)
+                            
+                        # 3. Try Auto-Discovery on other indices if current fails
+                        if cap is None or not cap.isOpened():
+                            if cached_cameras:
+                                for cam in cached_cameras:
+                                    if cam['index'] != current_camera_index:
+                                        cap = cv2.VideoCapture(cam['index'])
+                                        if cap.isOpened():
+                                            current_camera_index = cam['index']
+                                            active_index = current_camera_index
+                                            break
                 
-                # 2. Try without CAP_DSHOW as fallback
-                if not cap.isOpened():
-                    cap = cv2.VideoCapture(current_camera_index)
-                    
-                # 3. Try Auto-Discovery on other indexes if current fails
-                if not cap.isOpened():
-                    for idx in range(3):
-                        if idx != current_camera_index:
-                            cap = cv2.VideoCapture(idx)
-                            if cap.isOpened():
-                                current_camera_index = idx
-                                break
-                                
-                if not cap.isOpened():
+                if cap is None or not cap.isOpened():
                     # Return a black frame with error message
                     black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
                     cv2.putText(black_frame, "Camera not available", (150, 240),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                     ret, buffer = cv2.imencode('.jpg', black_frame)
-                    frame = buffer.tobytes()
-                    try:
-                        yield (b'--frame\r\n'
-                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                    except GeneratorExit:
-                        if cap is not None: cap.release()
-                        raise
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+                    threading.Event().wait(1.0) # wait before retrying
                     continue
+                else:
+                    # Warm up: skip first few frames which might be black/blurry on some cameras
+                    with camera_lock:
+                        if cap is not None and cap.isOpened():
+                            for _ in range(10): # Increased warm up
+                                cap.read()
 
             if not camera_active:
-                # Return a black frame with "Camera Disabled" message
-                if cap is not None:
-                    cap.release()
-                    cap = None
+                with camera_lock:
+                    if cap is not None:
+                        cap.release()
+                        cap = None
 
                 black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
                 cv2.putText(black_frame, "Camera Disabled", (180, 240),
                             cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
                 ret, buffer = cv2.imencode('.jpg', black_frame)
-                frame = buffer.tobytes()
-                try:
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                except GeneratorExit:
-                    if cap is not None: cap.release()
-                    raise
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+                threading.Event().wait(1.0)
                 continue
 
-            success, img = cap.read()
-            if not success:
-                print("⚠️ Camera frame not captured!")
+            # Thread-safe read
+            success = False
+            img = None
+            with camera_lock:
+                if cap is not None and cap.isOpened():
+                    success, img = cap.read()
+            
+            if not success or img is None:
+                # If read fails, maybe try to re-init in next loop
+                threading.Event().wait(0.1)
+                continue
+
+            # Ensure img is a valid numpy array before copy
+            if not isinstance(img, np.ndarray):
                 continue
 
             imgOutput = img.copy()
@@ -358,9 +439,14 @@ def generate_frames():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
             
             # Check for black frame
+            # Check for black frame
             if np.mean(imgOutput) < 5:
-                cv2.putText(imgOutput, "DARK FRAME DETECTED - CHECK CAMERA", (50, 240),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                dark_frame_count += 1
+                if dark_frame_count > 30: # Only show warning after ~1 second of darkness
+                    cv2.putText(imgOutput, "DARK FRAME DETECTED - CHECK CAMERA", (50, 240),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            else:
+                dark_frame_count = 0
 
             # Encode unified frame
             ret, buffer = cv2.imencode('.jpg', imgOutput)
@@ -379,7 +465,6 @@ def generate_frames():
                        b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
                 
         except GeneratorExit:
-            if cap is not None: cap.release()
             raise
         except Exception as global_e:
             print(f"CRITICAL GENERATOR ERROR: {global_e}")
@@ -563,6 +648,9 @@ def index():
         return redirect(url_for('tutorial'))
 
     camera_mode = 'translation'
+    
+    # Preload cameras on dashboard load to populate cache
+    get_camera_list()
 
     camera_active = user.camera_enabled
     current_camera_index = user.camera_index
@@ -643,19 +731,22 @@ def settings():
             db.session.commit()
             flash(f'Camera switched to index {new_index}', 'success')
 
-    # Get available cameras
-    # Get available cameras safely (Prevent Windows crashes)
-    available_cameras = []
-    for i in range(2):  # Only check the first 2 indices to prevent hanging
-        # Use CAP_DSHOW for faster, safer checks on Windows
-        cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
-        if cap.isOpened():
-            available_cameras.append(i)
-            cap.release()
+    # Get available cameras safely with names
+    available_cameras = get_camera_list()
 
     return render_template('settings.html',
                            user=user,
                            available_cameras=available_cameras)
+
+
+@app.route('/refresh_cameras', methods=['POST'])
+@login_required
+def refresh_cameras():
+    global cached_cameras
+    cached_cameras = [] # Clear cache
+    get_camera_list() # Repopulate cache
+    flash('Camera list refreshed.', 'success')
+    return redirect(url_for('settings'))
 
 
 @app.route('/tutorial')
@@ -686,6 +777,9 @@ def quiz():
     camera_active = user.camera_enabled
     current_camera_index = user.camera_index
     camera_mode = 'translation'
+    
+    # Preload cameras on quiz load to populate cache if needed
+    get_camera_list()
     
     return render_template('quiz.html', username=session.get('username', ''), camera_active=camera_active, is_admin=user.is_admin)
 
