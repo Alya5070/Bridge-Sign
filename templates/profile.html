@@ -400,13 +400,24 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ url_for('profile') }}">
                     <div class="form-group">
-                        <label for="username">Display Name</label>
-                        <input type="text" id="username" name="username" class="form-input" value="{{ user.username }}"
-                            minlength="3" required>
-                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem;">Minimum 3
-                            characters</p>
+                        <label for="security_question">Security Question</label>
+                        <select id="security_question" name="security_question" class="form-input">
+                            <option value="" {% if not user.security_question %}selected{% endif %} disabled>Select a security question</option>
+                            <option value="What was your first pet's name?" {% if user.security_question == "What was your first pet's name?" %}selected{% endif %}>What was your first pet's name?</option>
+                            <option value="What is your mother's maiden name?" {% if user.security_question == "What is your mother's maiden name?" %}selected{% endif %}>What is your mother's maiden name?</option>
+                            <option value="What was the name of your first school?" {% if user.security_question == "What was the name of your first school?" %}selected{% endif %}>What was the name of your first school?</option>
+                            <option value="In what city were you born?" {% if user.security_question == "In what city were you born?" %}selected{% endif %}>In what city were you born?</option>
+                            <option value="What is your favorite book?" {% if user.security_question == "What is your favorite book?" %}selected{% endif %}>What is your favorite book?</option>
+                        </select>
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem;">Used for password recovery</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="security_answer">Security Answer</label>
+                        <input type="text" id="security_answer" name="security_answer" class="form-input" 
+                            placeholder="Type new answer to update">
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem;">Leave blank to keep existing answer</p>
                     </div>
 
                     <button type="submit" class="form-button">Update Profile</button>

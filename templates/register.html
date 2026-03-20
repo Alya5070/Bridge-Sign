@@ -300,6 +300,25 @@
                 </div>
             </div>
 
+            <div class="form-group">
+                <label for="security_question">Security Question</label>
+                <select id="security_question" name="security_question" class="form-input" required>
+                    <option value="" disabled selected>Select a security question</option>
+                    <option value="What was your first pet's name?">What was your first pet's name?</option>
+                    <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                    <option value="What was the name of your first school?">What was the name of your first school?</option>
+                    <option value="In what city were you born?">In what city were you born?</option>
+                    <option value="What is your favorite book?">What is your favorite book?</option>
+                </select>
+                <div class="hint">Used for password recovery</div>
+            </div>
+
+            <div class="form-group">
+                <label for="security_answer">Security Answer</label>
+                <input type="text" id="security_answer" name="security_answer" class="form-input" 
+                    placeholder="Your answer" required>
+            </div>
+
             <button type="submit" class="btn-submit">Register</button>
         </form>
 

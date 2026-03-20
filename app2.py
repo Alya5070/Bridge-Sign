@@ -182,31 +182,59 @@ def generate_frames():
     global camera_mode, is_recording, is_testing, current_label, frames_recorded, target_frames, custom_model, custom_labels
 
     cap = None
+    
+    # Immediate yield to tell browser we are alive
+    status_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    cv2.putText(status_frame, "Initializing Camera Stream...", (120, 240),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+    ret, buffer = cv2.imencode('.jpg', status_frame)
+    yield (b'--frame\r\n'
+           b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
     while True:
-        # Check if camera should be active and reinitialize if needed
-        if camera_active and (cap is None or not cap.isOpened()):
-            # 1. Try with CAP_DSHOW for faster Windows init
-            cap = cv2.VideoCapture(current_camera_index, cv2.CAP_DSHOW)
-            
-            # 2. Try without CAP_DSHOW as fallback
-            if not cap.isOpened():
-                cap = cv2.VideoCapture(current_camera_index)
+        try:
+            # Check if camera should be active and reinitialize if needed
+            if camera_active and (cap is None or not cap.isOpened()):
+                # 1. Try with CAP_DSHOW for faster Windows init
+                cap = cv2.VideoCapture(current_camera_index, cv2.CAP_DSHOW)
                 
-            # 3. Try Auto-Discovery on other indexes if current fails
-            if not cap.isOpened():
-                for idx in range(3):
-                    if idx != current_camera_index:
-                        cap = cv2.VideoCapture(idx)
-                        if cap.isOpened():
-                            current_camera_index = idx
-                            break
-                            
-            if not cap.isOpened():
-                # Return a black frame with error message
+                # 2. Try without CAP_DSHOW as fallback
+                if not cap.isOpened():
+                    cap = cv2.VideoCapture(current_camera_index)
+                    
+                # 3. Try Auto-Discovery on other indexes if current fails
+                if not cap.isOpened():
+                    for idx in range(3):
+                        if idx != current_camera_index:
+                            cap = cv2.VideoCapture(idx)
+                            if cap.isOpened():
+                                current_camera_index = idx
+                                break
+                                
+                if not cap.isOpened():
+                    # Return a black frame with error message
+                    black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                    cv2.putText(black_frame, "Camera not available", (150, 240),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                    ret, buffer = cv2.imencode('.jpg', black_frame)
+                    frame = buffer.tobytes()
+                    try:
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                    except GeneratorExit:
+                        if cap is not None: cap.release()
+                        raise
+                    continue
+
+            if not camera_active:
+                # Return a black frame with "Camera Disabled" message
+                if cap is not None:
+                    cap.release()
+                    cap = None
+
                 black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-                cv2.putText(black_frame, "Camera not available", (150, 240),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                cv2.putText(black_frame, "Camera Disabled", (180, 240),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
                 ret, buffer = cv2.imencode('.jpg', black_frame)
                 frame = buffer.tobytes()
                 try:
@@ -217,152 +245,149 @@ def generate_frames():
                     raise
                 continue
 
-        if not camera_active:
-            # Return a black frame with "Camera Disabled" message
-            if cap is not None:
-                cap.release()
-                cap = None
+            success, img = cap.read()
+            if not success:
+                print("⚠️ Camera frame not captured!")
+                continue
 
-            black_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-            cv2.putText(black_frame, "Camera Disabled", (180, 240),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
-            ret, buffer = cv2.imencode('.jpg', black_frame)
+            imgOutput = img.copy()
+
+            # ---------------------------------------------
+            # BRANCH 1: NORMAL TRANSLATION MODE (MediaPipe Custom)
+            # ---------------------------------------------
+            if camera_mode == 'translation':
+                imgOutput = cv2.flip(imgOutput, 1) # Mirroring for user friendliness
+                rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
+                results = hands.process(rgb_img)
+                
+                if results.multi_hand_landmarks and results.multi_handedness:
+                    for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                        hand_type = handedness.classification[0].label
+                        
+                        # Mirror Right Hand coords to Left Hand geometry for standard detection
+                        flip_x = (hand_type == 'Right')
+                        
+                        mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                        landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
+                        
+                        if custom_model is not None and len(custom_labels) > 0:
+                            try:
+                                prediction = custom_model.predict(np.array([landmarks]), verbose=0)
+                                class_id = np.argmax(prediction)
+                                pred_confidence = prediction[0][class_id]
+                                
+                                if pred_confidence > 0.5:
+                                    current_prediction = custom_labels[class_id]
+                                    confidence_scores = prediction[0].tolist()
+                                    cv2.putText(imgOutput, f"{current_prediction} ({pred_confidence*100:.1f}%)", (50, 50),
+                                                cv2.FONT_HERSHEY_COMPLEX, 1.2, (0, 255, 0), 2)
+                                else:
+                                    current_prediction = "Low confidence"
+                                    confidence_scores = []
+                            except Exception as e:
+                                print(f"Error predicting: {e}")
+                                current_prediction = "Prediction Error"
+                                confidence_scores = []
+                        else:
+                            current_prediction = "Model not loaded"
+                            confidence_scores = []
+                            cv2.putText(imgOutput, "Model not loaded. Train in Trainer Module.", (20, 50),
+                                        cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 0, 255), 2)
+                else:
+                    current_prediction = "No hand detected"
+                    confidence_scores = []
+                    
+            # ---------------------------------------------
+            # BRANCH 2: TRAINING / TESTING MODE (MediaPipe)
+            # ---------------------------------------------
+            elif camera_mode in ['training_idle', 'testing']:
+                imgOutput = cv2.flip(imgOutput, 1) # Selfie view for training
+                rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
+                results = hands.process(rgb_img)
+                
+                pred_label = None
+                pred_confidence = 0.0
+
+                if results.multi_hand_landmarks and results.multi_handedness:
+                    for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                        hand_type = handedness.classification[0].label
+                        
+                        # Standardize all data to Left Hand geometry by mirroring Right hands
+                        flip_x = (hand_type == 'Right')
+                        
+                        mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                        landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
+
+                        if is_recording and frames_recorded < target_frames:
+                            with open(csv_filepath, mode='a', newline='') as f:
+                                writer = csv.writer(f)
+                                row = [current_label] + landmarks
+                                writer.writerow(row)
+                            
+                            frames_recorded += 1
+                            if frames_recorded >= target_frames:
+                                is_recording = False
+
+                        elif is_testing and custom_model is not None and custom_labels:
+                            try:
+                                prediction = custom_model.predict(np.array([landmarks]), verbose=0)
+                                class_id = np.argmax(prediction)
+                                pred_confidence = prediction[0][class_id]
+                                if pred_confidence > 0.5:
+                                    pred_label = custom_labels[class_id]
+                            except Exception:
+                                pass
+                
+                # Overlay UI instructions over the training feed
+                if is_recording:
+                    cv2.putText(imgOutput, f"Recording: {frames_recorded}/{target_frames}", (10, 50), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                elif is_testing:
+                    if pred_label:
+                        cv2.putText(imgOutput, f"Sign: {pred_label} ({pred_confidence*100:.1f}%)", (10, 50), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                    else:
+                        cv2.putText(imgOutput, "Testing mode: Waiting for sign...", (10, 50), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+                else:
+                    cv2.putText(imgOutput, "Ready. Show sign to begin.", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+            # --- DEBUG OVERLAY ---
+            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            cv2.putText(imgOutput, f"Stream: {timestamp} Mode: {camera_mode}", (10, imgOutput.shape[0] - 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            
+            # Check for black frame
+            if np.mean(imgOutput) < 5:
+                cv2.putText(imgOutput, "DARK FRAME DETECTED - CHECK CAMERA", (50, 240),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+            # Encode unified frame
+            ret, buffer = cv2.imencode('.jpg', imgOutput)
             frame = buffer.tobytes()
+
             try:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            except GeneratorExit:
-                if cap is not None: cap.release()
-                raise
-            continue
-
-        success, img = cap.read()
-        if not success:
-            print("⚠️ Camera frame not captured!")
-            continue
-
-        imgOutput = img.copy()
-
-        # ---------------------------------------------
-        # BRANCH 1: NORMAL TRANSLATION MODE (MediaPipe Custom)
-        # ---------------------------------------------
-        if camera_mode == 'translation':
-            imgOutput = cv2.flip(imgOutput, 1) # Mirroring for user friendliness
-            rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
-            results = hands.process(rgb_img)
-            
-            if results.multi_hand_landmarks and results.multi_handedness:
-                for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                    hand_type = handedness.classification[0].label
-                    
-                    # Mirror Right Hand coords to Left Hand geometry for standard detection
-                    flip_x = (hand_type == 'Right')
-                    
-                    mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                    landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
-                    
-                    if custom_model is not None and len(custom_labels) > 0:
-                        try:
-                            prediction = custom_model.predict(np.array([landmarks]), verbose=0)
-                            class_id = np.argmax(prediction)
-                            pred_confidence = prediction[0][class_id]
-                            
-                            if pred_confidence > 0.5:
-                                current_prediction = custom_labels[class_id]
-                                confidence_scores = prediction[0].tolist()
-                                cv2.putText(imgOutput, f"{current_prediction} ({pred_confidence*100:.1f}%)", (50, 50),
-                                            cv2.FONT_HERSHEY_COMPLEX, 1.2, (0, 255, 0), 2)
-                            else:
-                                current_prediction = "Low confidence"
-                                confidence_scores = []
-                        except Exception as e:
-                            print(f"Error predicting: {e}")
-                            current_prediction = "Prediction Error"
-                            confidence_scores = []
-                    else:
-                        current_prediction = "Model not loaded"
-                        confidence_scores = []
-                        cv2.putText(imgOutput, "Model not loaded. Train in Trainer Module.", (20, 50),
-                                    cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 0, 255), 2)
-            else:
-                current_prediction = "No hand detected"
-                confidence_scores = []
+            except Exception as e:
+                print(f"ERROR IN GENERATE_FRAMES: {e}")
+                error_img = np.zeros((480, 640, 3), dtype=np.uint8)
+                cv2.putText(error_img, f"STREAM ERROR: {str(e)[:40]}", (20, 240),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                ret, buffer = cv2.imencode('.jpg', error_img)
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
                 
-        # ---------------------------------------------
-        # BRANCH 2: TRAINING / TESTING MODE (MediaPipe)
-        # ---------------------------------------------
-        elif camera_mode in ['training_idle', 'testing']:
-            imgOutput = cv2.flip(imgOutput, 1) # Selfie view for training
-            rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
-            results = hands.process(rgb_img)
-            
-            pred_label = None
-            pred_confidence = 0.0
-
-            if results.multi_hand_landmarks and results.multi_handedness:
-                for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                    hand_type = handedness.classification[0].label
-                    
-                    # Standardize all data to Left Hand geometry by mirroring Right hands
-                    flip_x = (hand_type == 'Right')
-                    
-                    mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                    landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
-
-                    if is_recording and frames_recorded < target_frames:
-                        with open(csv_filepath, mode='a', newline='') as f:
-                            writer = csv.writer(f)
-                            row = [current_label] + landmarks
-                            writer.writerow(row)
-                        
-                        frames_recorded += 1
-                        if frames_recorded >= target_frames:
-                            is_recording = False
-
-                    elif is_testing and custom_model is not None and custom_labels:
-                        try:
-                            prediction = custom_model.predict(np.array([landmarks]), verbose=0)
-                            class_id = np.argmax(prediction)
-                            pred_confidence = prediction[0][class_id]
-                            if pred_confidence > 0.5:
-                                pred_label = custom_labels[class_id]
-                        except Exception:
-                            pass
-            
-            # Overlay UI instructions over the training feed
-            if is_recording:
-                cv2.putText(imgOutput, f"Recording: {frames_recorded}/{target_frames}", (10, 50), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            elif is_testing:
-                if pred_label:
-                    cv2.putText(imgOutput, f"Sign: {pred_label} ({pred_confidence*100:.1f}%)", (10, 50), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-                else:
-                    cv2.putText(imgOutput, "Testing mode: Waiting for sign...", (10, 50), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-            else:
-                cv2.putText(imgOutput, "Ready. Show sign to begin.", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-
-        # --- DEBUG OVERLAY ---
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        cv2.putText(imgOutput, f"Stream: {timestamp} Mode: {camera_mode}", (10, imgOutput.shape[0] - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-        
-        # Check for black frame
-        if np.mean(imgOutput) < 5:
-            cv2.putText(imgOutput, "DARK FRAME DETECTED - CHECK CAMERA", (50, 240),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-
-        # Encode unified frame
-        ret, buffer = cv2.imencode('.jpg', imgOutput)
-        frame = buffer.tobytes()
-
-        try:
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         except GeneratorExit:
             if cap is not None: cap.release()
             raise
+        except Exception as global_e:
+            print(f"CRITICAL GENERATOR ERROR: {global_e}")
+            error_img = np.zeros((480, 640, 3), dtype=np.uint8)
+            cv2.putText(error_img, "CRITICAL ERROR", (150, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            ret, buffer = cv2.imencode('.jpg', error_img)
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
 
 @app.context_processor
