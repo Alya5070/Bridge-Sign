@@ -947,21 +947,33 @@ def train_model_thread():
         with open(csv_filepath, 'r') as f:
             reader = csv.reader(f)
             for row in reader:
-                if len(row) > 1:
-                    # Skip header row if present
-                    if row[0].lower() == 'label' or not row[1].replace('.', '', 1).replace('-', '', 1).isdigit():
-                        continue
-                    # Automatically detect if label is at the start or end
-                    try:
-                        float(row[-1])
-                        label = row[0]
-                        features = [float(x) for x in row[1:64]]
-                    except ValueError:
-                        label = row[-1]
-                        features = [float(x) for x in row[0:63]]
+                if len(row) != 64:
+                    continue
                     
-                    labels_list.append(label)
-                    features_list.append(features)
+                # Skip header row if present
+                is_header = False
+                if row[0].lower() == 'label':
+                    is_header = True
+                else:
+                    try:
+                        float(row[1])
+                    except ValueError:
+                        is_header = True
+                
+                if is_header:
+                    continue
+                    
+                # Automatically detect if label is at the start or end
+                try:
+                    float(row[-1])
+                    label = row[0]
+                    features = [float(x) for x in row[1:64]]
+                except ValueError:
+                    label = row[-1]
+                    features = [float(x) for x in row[0:63]]
+                
+                labels_list.append(label)
+                features_list.append(features)
                     
         if len(labels_list) == 0:
             training_log.append("Dataset is empty. Record data first.")
@@ -1131,6 +1143,36 @@ def delete_label():
             'message': f'Deleted {deleted_count} frames for label: {label_to_delete}'
         })
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/get_dataset_labels')
+@admin_required
+def get_dataset_labels():
+    """Fetches unique labels from the dataset CSV."""
+    if not os.path.exists(csv_filepath):
+        return jsonify({'success': True, 'labels': []})
+        
+    try:
+        labels_found = set()
+        with open(csv_filepath, 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if len(row) > 1:
+                    # Skip header or malformed rows
+                    if row[0].lower() == 'label' or not row[1].replace('.', '', 1).replace('-', '', 1).isdigit():
+                        continue
+                    
+                    # Logic matches train_model_thread for label extraction
+                    try:
+                        float(row[-1])
+                        labels_found.add(row[0].upper())
+                    except ValueError:
+                        labels_found.add(row[-1].upper())
+                        
+        sorted_labels = sorted(list(labels_found))
+        return jsonify({'success': True, 'labels': sorted_labels})
+    except Exception as e:
+        print(f"Error fetching dataset labels: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/admin', methods=['GET', 'POST'])
