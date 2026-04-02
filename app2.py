@@ -231,6 +231,7 @@ def login_required(f):
 # Global camera object and lock for thread safety
 cap = None
 camera_lock = threading.Lock()
+hands_lock = threading.Lock()
 active_index = -1
 def generate_frames():
     global current_prediction, confidence_scores, camera_active, current_camera_index
@@ -339,7 +340,9 @@ def generate_frames():
             if camera_mode == 'translation':
                 imgOutput = cv2.flip(imgOutput, 1) # Mirroring for user friendliness
                 rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
-                results = hands.process(rgb_img)
+                
+                with hands_lock:
+                    results = hands.process(rgb_img)
                 
                 if results.multi_hand_landmarks and results.multi_handedness:
                     for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
@@ -384,7 +387,9 @@ def generate_frames():
             elif camera_mode in ['training_idle', 'testing']:
                 imgOutput = cv2.flip(imgOutput, 1) # Selfie view for training
                 rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
-                results = hands.process(rgb_img)
+                
+                with hands_lock:
+                    results = hands.process(rgb_img)
                 
                 pred_label = None
                 pred_confidence = 0.0
@@ -671,6 +676,17 @@ def profile():
         new_username = request.form.get('username', '').strip()
         security_question = request.form.get('security_question', '').strip()
         security_answer = request.form.get('security_answer', '').strip()
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if not current_password:
+            flash('Current password is required to make changes', 'error')
+            return render_template('profile.html', user=user)
+            
+        if not user.check_password(current_password):
+            flash('Incorrect current password', 'error')
+            return render_template('profile.html', user=user)
 
         if not new_username:
             flash('Username cannot be empty', 'error')
@@ -685,6 +701,15 @@ def profile():
         if existing_user and existing_user.id != user.id:
             flash('Username already taken', 'error')
             return render_template('profile.html', user=user)
+
+        if new_password:
+            if len(new_password) < 6:
+                flash('New password must be at least 6 characters long', 'error')
+                return render_template('profile.html', user=user)
+            if new_password != confirm_password:
+                flash('New passwords do not match', 'error')
+                return render_template('profile.html', user=user)
+            user.set_password(new_password)
 
         user.username = new_username
         session['username'] = new_username
