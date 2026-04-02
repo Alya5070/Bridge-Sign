@@ -398,7 +398,12 @@
                         <h2>{{ user.username }}</h2>
                         <p>User Tag: #{{ user.id }}</p>
                     </div>
-                </div>
+                <form method="POST" action="{{ url_for('profile') }}">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" class="form-input" 
+                            value="{{ user.username }}" required>
+                    </div>
 
                     <div class="form-group">
                         <label for="security_question">Security Question</label>
@@ -418,6 +423,28 @@
                         <input type="text" id="security_answer" name="security_answer" class="form-input" 
                             placeholder="Type new answer to update">
                         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem;">Leave blank to keep existing answer</p>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 2rem 0;">
+
+                    <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Change Password</h3>
+                    <div class="form-group">
+                        <label for="current_password">Current Password</label>
+                        <input type="password" id="current_password" name="current_password" class="form-input" 
+                            placeholder="Enter current password to make changes">
+                        <p style="font-size: 0.8rem; color: rgba(248, 113, 113, 0.8); margin-top: 0.5rem;">Required to change username, password, or security settings</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_password">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="form-input" 
+                            placeholder="Type new password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm New Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" 
+                            placeholder="Confirm new password">
                     </div>
 
                     <button type="submit" class="form-button">Update Profile</button>
