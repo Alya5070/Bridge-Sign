@@ -592,6 +592,7 @@
             <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
             <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
             <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
+            <a href="{{ url_for('text_to_sign') }}" class="navbar-item{% if request.endpoint == 'text_to_sign' %} active{% endif %}">Text-to-Sign</a>
             <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
             <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
             {% if is_admin %}
@@ -676,6 +677,28 @@
                     </form>
                 </div>
             </div>
+            
+            <div class="practice-panel glass-panel">
+                <div class="practice-header">
+                    <h3>Community & Feedback</h3>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Suggest words to add to the app!</div>
+                <div class="practice-input-group">
+                    <input type="text" id="feedback-input" class="pr-input" placeholder="E.g., Thank You" maxlength="50">
+                    <button class="pr-btn primary" onclick="submitWordRequest()">Suggest</button>
+                </div>
+                <div id="feedback-msg" class="status-msg"></div>
+                
+                <h4 style="margin-top: 1rem; font-size: 0.9rem; color: #cbd5e1;">My Requests</h4>
+                <div id="my-requests-list" style="max-height: 100px; overflow-y: auto; font-size: 0.8rem; color: var(--text-muted); background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;">
+                    Loading...
+                </div>
+                
+                <h4 style="margin-top: 1rem; font-size: 0.9rem; color: #cbd5e1;">Recently Added</h4>
+                <div id="recent-requests-list" style="display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem;">
+                    <!-- Badges injected by JS -->
+                </div>
+            </div>
         </aside>
 
         <main class="main-feed">
@@ -740,6 +763,68 @@
                 text.textContent = 'Show Analytics';
             }
         }
+
+        // --- FEEDBACK MODULE ---
+        async function submitWordRequest() {
+            const input = document.getElementById('feedback-input');
+            const msg = document.getElementById('feedback-msg');
+            const word = input.value.trim();
+            
+            if(!word) return;
+            
+            try {
+                const res = await fetch('/submit_word_request', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({word: word})
+                });
+                const data = await res.json();
+                msg.textContent = data.message || data.error;
+                msg.className = 'status-msg ' + (data.success ? 'success' : '');
+                if(data.success) {
+                    input.value = '';
+                    loadMyRequests();
+                }
+            } catch(e) {
+                msg.textContent = "Error submitting request";
+            }
+        }
+        
+        async function loadMyRequests() {
+            const container = document.getElementById('my-requests-list');
+            try {
+                const res = await fetch('/my_requests');
+                const data = await res.json();
+                if(data.requests && data.requests.length > 0) {
+                    container.innerHTML = data.requests.map(r => 
+                        `<div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem; padding-bottom: 0.2rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <span>${r.word}</span>
+                            <span style="color: ${r.status === 'Added' ? '#10b981' : (r.status === 'Rejected' ? '#ef4444' : '#fbbf24')}">${r.status}</span>
+                         </div>`
+                    ).join('');
+                } else {
+                    container.innerHTML = 'No requests yet.';
+                }
+            } catch(e) {}
+        }
+        
+        async function loadRecentRequests() {
+            const container = document.getElementById('recent-requests-list');
+            try {
+                const res = await fetch('/recently_added');
+                const data = await res.json();
+                if(data.recent && data.recent.length > 0) {
+                    container.innerHTML = data.recent.map(r => 
+                        `<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(16, 185, 129, 0.3);">${r}</span>`
+                    ).join('');
+                }
+            } catch(e) {}
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            loadMyRequests();
+            loadRecentRequests();
+        });
 
         const baseChartOptions = {
             responsive: true,

@@ -543,6 +543,7 @@
             <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
             <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
             <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
+            <a href="{{ url_for('text_to_sign') }}" class="navbar-item{% if request.endpoint == 'text_to_sign' %} active{% endif %}">Text-to-Sign</a>
             <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
             <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
             {% if is_admin %}
@@ -636,7 +637,7 @@
                     </h2>
                 </div>
                 <div class="quiz-content">
-                    <div class="target-box">
+                    <div class="target-box" id="targetDisplay">
                         <span class="target-label">Please Sign</span>
                         <div class="target-value" id="quizTarget">-</div>
 
@@ -798,30 +799,44 @@
             if (!currentTarget) return;
 
             try {
-                // Ensure backend isn't practicing its own standard list
                 const res = await fetch('/get_prediction');
                 const data = await res.json();
 
                 const pred = data.prediction || "";
                 document.getElementById('currentPredStat').textContent = pred ? pred : "-";
+                
+                const targetBox = document.getElementById('targetDisplay');
 
-                // Case-insensitive comparison
                 if (pred.toUpperCase() === currentTarget.toUpperCase()) {
+                    targetBox.style.borderColor = "var(--accent)";
+                    targetBox.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.4)";
+                    targetBox.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
+                    
                     detectionMatches++;
                     const pct = Math.min(100, (detectionMatches / MATCHES_NEEDED) * 100);
                     updateLockUI(pct);
 
                     if (detectionMatches >= MATCHES_NEEDED) {
-                        // Success! Flashing green briefly, then next
                         document.getElementById('lockProgress').style.background = "#fff";
+                        targetBox.style.transform = "scale(1.05)";
                         setTimeout(() => {
                             document.getElementById('lockProgress').style.background = "var(--accent)";
+                            targetBox.style.transform = "scale(1)";
                             nextTarget();
                         }, 400);
-                        // Prevent multi triggers
                         currentTarget = null;
                     }
                 } else {
+                    if (pred && pred !== "-" && pred.toUpperCase() !== "NO HAND DETECTED") {
+                        targetBox.style.borderColor = "var(--danger)";
+                        targetBox.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.4)";
+                        targetBox.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
+                    } else {
+                        targetBox.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                        targetBox.style.boxShadow = "none";
+                        targetBox.style.backgroundColor = "transparent";
+                    }
+                    
                     detectionMatches = Math.max(0, detectionMatches - 1);
                     updateLockUI((detectionMatches / MATCHES_NEEDED) * 100);
                 }
