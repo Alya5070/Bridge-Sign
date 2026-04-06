@@ -1,7 +1,5 @@
 from flask import Flask, render_template, Response, jsonify, request, redirect, url_for, session, flash
 import cv2
-from cvzone.HandTrackingModule import HandDetector
-from cvzone.ClassificationModule import Classifier
 import numpy as np
 import math
 from flask_sqlalchemy import SQLAlchemy
@@ -10,6 +8,7 @@ from functools import wraps
 import os
 import shutil
 import csv
+import json
 import threading
 from datetime import datetime
 
@@ -95,6 +94,15 @@ class User(db.Model):
             return False
         return check_password_hash(self.security_answer_hash, answer.strip().lower())
 
+class WordRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requested_word = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), default="Pending") # Pending, Added, Rejected
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('requests', lazy=True))
+
 with app.app_context():
     db.create_all()
     # Schema Migration for newly added columns
@@ -121,8 +129,10 @@ with app.app_context():
 base_dir = os.path.abspath(os.path.dirname(__file__))
 active_mode = "spelling"  # Default mode
 
-# Model Paths are natively deprecated in favor of MediaPipe's custom implementation
-detector = HandDetector(maxHands=1, detectionCon=0.8) # Keep for any loose dependencies
+# Initialize variables and models
+base_dir = os.path.abspath(os.path.dirname(__file__))
+active_mode = "spelling"  # Default mode
+
 classifier = None
 labels = []
 
@@ -356,7 +366,9 @@ def generate_frames():
                         
                         if custom_model is not None and len(custom_labels) > 0:
                             try:
-                                prediction = custom_model.predict(np.array([landmarks]), verbose=0)
+                                # FAST INFERENCE: Using __call__ directly on tensor avoids the .predict() callback overhead
+                                input_tensor = tf.convert_to_tensor([landmarks])
+                                prediction = custom_model(input_tensor, training=False).numpy()
                                 class_id = np.argmax(prediction)
                                 pred_confidence = prediction[0][class_id]
                                 
@@ -416,7 +428,9 @@ def generate_frames():
 
                         elif is_testing and custom_model is not None and custom_labels:
                             try:
-                                prediction = custom_model.predict(np.array([landmarks]), verbose=0)
+                                # FAST INFERENCE
+                                input_tensor = tf.convert_to_tensor([landmarks])
+                                prediction = custom_model(input_tensor, training=False).numpy()
                                 class_id = np.argmax(prediction)
                                 pred_confidence = prediction[0][class_id]
                                 if pred_confidence > 0.5:
@@ -949,6 +963,8 @@ def load_custom_model():
     labels_path = os.path.join(base_dir, 'Model', 'new_custom_labels.txt')
     
     if os.path.exists(model_path) and os.path.exists(labels_path):
+        # Prevent memory leaks when reloading models repeatedly
+        tf.keras.backend.clear_session()
         custom_model = tf.keras.models.load_model(model_path)
         with open(labels_path, 'r') as f:
             custom_labels = [line.strip() for line in f.readlines()]
@@ -972,7 +988,8 @@ def train_model_thread():
         with open(csv_filepath, 'r') as f:
             reader = csv.reader(f)
             for row in reader:
-                if len(row) != 64:
+                # Must have at least a label and one set of coordinates (e.g. 63 values)
+                if len(row) < 5:
                     continue
                     
                 # Skip header row if present
@@ -992,10 +1009,10 @@ def train_model_thread():
                 try:
                     float(row[-1])
                     label = row[0]
-                    features = [float(x) for x in row[1:64]]
+                    features = [float(x) for x in row[1:]]
                 except ValueError:
                     label = row[-1]
-                    features = [float(x) for x in row[0:63]]
+                    features = [float(x) for x in row[:-1]]
                 
                 labels_list.append(label)
                 features_list.append(features)
@@ -1015,8 +1032,10 @@ def train_model_thread():
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         
         training_log.append("Building fast MLP Landmark Model...")
+        # Determine input shape dynamically based on the dataset
+        num_features = X.shape[1]
         model = Sequential([
-            Dense(128, activation='relu', input_shape=(63,)),
+            Dense(128, activation='relu', input_shape=(num_features,)),
             Dropout(0.2),
             Dense(64, activation='relu'),
             Dense(len(unique_labels), activation='softmax')
@@ -1259,12 +1278,139 @@ def admin_dashboard():
         return redirect(url_for('admin_dashboard'))
 
     all_users = User.query.order_by(User.id).all()
+    pending_requests = WordRequest.query.filter_by(status='Pending').order_by(WordRequest.timestamp.desc()).all()
+    
     return render_template(
         'admin_dashboard.html',
         username=session.get('username', ''),
         is_admin=True,
-        users=all_users
+        users=all_users,
+        pending_requests=pending_requests
     )
+
+# ==========================================
+# TEXT-TO-SIGN MODULE ENDPOINTS
+# ==========================================
+
+def load_sign_dictionary():
+    try:
+        with open(os.path.join(base_dir, 'sign_dictionary.json'), 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+@app.route('/text_to_sign')
+@login_required
+def text_to_sign():
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('text_to_sign.html', username=session.get('username', ''), is_admin=user.is_admin)
+
+@app.route('/translate_text', methods=['POST'])
+@login_required
+def translate_text():
+    data = request.json
+    phrase = data.get('phrase', '').lower().strip()
+    
+    dictionary = load_sign_dictionary()
+    keys = sorted(dictionary.keys(), key=len, reverse=True)
+    
+    results = []
+    missing = []
+    
+    remaining = phrase
+    while remaining:
+        remaining = remaining.strip()
+        if not remaining:
+            break
+            
+        matched = False
+        for k in keys:
+            if remaining.startswith(k):
+                if len(remaining) == len(k) or not remaining[len(k)].isalnum():
+                    results.append({'word': k, 'youtube_id': dictionary[k]})
+                    remaining = remaining[len(k):]
+                    matched = True
+                    break
+                    
+        if not matched:
+            word = remaining.split()[0]
+            clean_word = ''.join(c for c in word if c.isalnum())
+            if clean_word and clean_word not in missing:
+                missing.append(clean_word)
+            remaining = remaining[len(word):]
+            
+    return jsonify({'results': results, 'missing': missing})
+
+# ==========================================
+# FEEDBACK / REQUEST MODULE ENDPOINTS
+# ==========================================
+
+@app.route('/submit_word_request', methods=['POST'])
+@login_required
+def submit_word_request():
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found'})
+        
+    data = request.json
+    word = data.get('word', '').strip()
+    
+    if not word:
+        return jsonify({'success': False, 'error': 'Word cannot be empty'})
+        
+    if len(word) > 50:
+        return jsonify({'success': False, 'error': 'Word is too long'})
+        
+    # Check if this user recently requested this exact word
+    existing = WordRequest.query.filter_by(user_id=user.id, requested_word=word, status='Pending').first()
+    if existing:
+        return jsonify({'success': False, 'error': 'You already have a pending request for this word.'})
+        
+    new_request = WordRequest(user_id=user.id, requested_word=word)
+    db.session.add(new_request)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Request submitted successfully!'})
+
+@app.route('/update_word_request', methods=['POST'])
+@admin_required
+def update_word_request():
+    data = request.json
+    req_id = data.get('request_id')
+    new_status = data.get('status')
+    
+    if new_status not in ['Added', 'Rejected']:
+        return jsonify({'success': False, 'error': 'Invalid status'})
+        
+    word_req = WordRequest.query.get(req_id)
+    if not word_req:
+        return jsonify({'success': False, 'error': 'Request not found'})
+        
+    word_req.status = new_status
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@app.route('/my_requests', methods=['GET'])
+@login_required
+def my_requests():
+    # Only fetches the current user's requests for the dashboard widget
+    user_requests = WordRequest.query.filter_by(user_id=session['user_id']).order_by(WordRequest.timestamp.desc()).all()
+    requests_data = [{'word': r.requested_word, 'status': r.status, 'date': r.timestamp.strftime('%Y-%m-%d')} for r in user_requests]
+    return jsonify({'requests': requests_data})
+
+@app.route('/recently_added', methods=['GET'])
+@login_required
+def recently_added():
+    # Fetches recently approved requests to show community progress
+    recent = WordRequest.query.filter_by(status='Added').order_by(WordRequest.timestamp.desc()).limit(5).all()
+    recent_data = [r.requested_word for r in recent]
+    # Unique filter while preserving order
+    seen = set()
+    unique_recent = [x for x in recent_data if not (x in seen or seen.add(x))]
+    return jsonify({'recent': unique_recent})
 
 # Load default model natively on startup after all globals have initialized
 load_model(active_mode)

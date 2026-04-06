@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Sign - Bridge Sign</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --accent: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .orb-1 { width: 400px; height: 400px; background: #4f46e5; top: -100px; left: -100px; }
+        .orb-2 { width: 300px; height: 300px; background: #c026d3; bottom: -50px; right: -50px; animation-delay: -5s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(100px, 50px) scale(1.2); }
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Navbar Layout identical to other pages */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            margin: 1.5rem;
+            z-index: 10;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-menu { display: flex; gap: 1rem; }
+        .navbar-item {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .navbar-item:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
+        .navbar-item.active {
+            color: #fff;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .navbar-user { display: flex; align-items: center; gap: 1rem; }
+        .user-avatar {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold;
+        }
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            text-decoration: none; font-size: 0.9rem; font-weight: 500;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .hero-section {
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .input-wrapper {
+            margin: 2rem auto;
+            max-width: 600px;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .phrase-input {
+            flex: 1;
+            padding: 1.2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .phrase-input:focus { border-color: var(--primary-light); }
+
+        .btn-translate {
+            background: var(--primary);
+            color: white;
+            border: 1px solid var(--primary-light);
+            padding: 0 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-translate:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .video-card {
+            background: rgba(0,0,0,0.2);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            animation: fadeInUp 0.5s ease backwards;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .video-label {
+            padding: 1rem;
+            font-weight: 600;
+            text-align: center;
+            background: rgba(255,255,255,0.05);
+            color: #60a5fa;
+            text-transform: capitalize;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            background: #000;
+        }
+
+        .iframe-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.2);
+            border-radius: 16px;
+            font-style: italic;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <nav class="navbar glass-panel">
+        <div class="navbar-brand">Bridge Sign</div>
+        <div class="navbar-menu">
+            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
+            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
+            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
+            <a href="{{ url_for('text_to_sign') }}" class="navbar-item{% if request.endpoint == 'text_to_sign' %} active{% endif %}">Text-to-Sign</a>
+            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
+            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
+            {% if is_admin %}
+            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
+            {% endif %}
+        </div>
+        <div class="navbar-user">
+            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
+            <span>{{ username }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="hero-section glass-panel">
+            <h1>Dynamic Translation</h1>
+            <p style="color: var(--text-muted);">Type a phrase and we will convert the recognized words into a visual dictionary lookup.</p>
+            
+            <div class="input-wrapper">
+                <input type="text" id="phraseInput" class="phrase-input" placeholder="e.g. Hello thank you please" onkeypress="handleEnter(event)">
+                <button class="btn-translate" onclick="fetchTranslations()">Translate</button>
+            </div>
+            <p id="system-feedback" style="height: 20px; font-size: 0.9rem; color: #f87171;"></p>
+        </div>
+
+        <div>
+            <h2 style="font-size: 1.2rem; margin-bottom: 1rem; padding-left: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Sign Sequence
+            </h2>
+            <div class="grid-container" id="videoGrid">
+                <!-- Videos injected dynamically -->
+                <div class="no-results">Your translated signs will appear here.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                fetchTranslations();
+            }
+        }
+
+        async function fetchTranslations() {
+            const inputEle = document.getElementById('phraseInput');
+            const feedback = document.getElementById('system-feedback');
+            const grid = document.getElementById('videoGrid');
+            const phrase = inputEle.value.trim();
+
+            if (!phrase) {
+                feedback.textContent = "Please enter a phrase to translate.";
+                return;
+            }
+
+            feedback.textContent = "Translating...";
+            feedback.style.color = "var(--text-muted)";
+            
+            try {
+                const res = await fetch('/translate_text', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({phrase: phrase})
+                });
+                
+                const data = await res.json();
+                
+                if (data.results && data.results.length > 0) {
+                    feedback.textContent = "";
+                    grid.innerHTML = "";
+                    
+                    data.results.forEach((item, idx) => {
+                        grid.innerHTML += `
+                            <div class="video-card" style="animation-delay: ${idx * 0.1}s">
+                                <div class="video-label">${item.word}</div>
+                                <div class="iframe-container">
+                                    <iframe src="https://www.youtube.com/embed/${item.youtube_id}" allowfullscreen></iframe>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    if (data.missing.length > 0) {
+                        feedback.textContent = `Note: The following words were not in our dictionary yet: ${data.missing.join(', ')}`;
+                        feedback.style.color = "#fbbf24";
+                    }
+                } else {
+                    grid.innerHTML = `<div class="no-results">No signs found for any of those words. Try basic words like "hello", "thank you", or "apple".</div>`;
+                    feedback.textContent = "";
+                }
+            } catch (e) {
+                feedback.textContent = "Error communicating with translation server.";
+                feedback.style.color = "#f87171";
+            }
+        }
+    </script>
+</body>
+</html>
