@@ -311,36 +311,24 @@
             transform: translateY(-2px);
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
 
 <body>
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
 
-        <nav class="navbar glass-panel">
-        <div class="navbar-brand">Bridge Sign</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
-            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
-            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
-            {% if is_admin %}
-            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
-            {% endif %}
-        </div>
-        <div class="navbar-user">
-            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
-            <span>{{ username }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
-
-    <div class="container glass-panel">
-        <div class="header">
-            <h1>Manage Users</h1>
-            <p>Manage access privileges to the platform.</p>
+        {% include '_navbar.html' %}<div class="container glass-panel">
+        <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Admin Dashboard</h1>
+                <p>Manage users, review requests, and configure the dictionary.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_dictionary') }}" style="text-decoration: none; padding: 0.8rem 1.5rem; border-radius: 8px; display: inline-block; background: #6366f1; color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">
+                    📖 Manage Dictionary
+                </a>
+            </div>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}

@@ -11,6 +11,7 @@ import csv
 import json
 import threading
 from datetime import datetime
+import re
 
 # --- MACHINE LEARNING & TRAINER IMPORTS ---
 import mediapipe as mp
@@ -99,6 +100,7 @@ class WordRequest(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     requested_word = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(20), default="Pending") # Pending, Added, Rejected
+    suggestion_type = db.Column(db.String(50), default="ai_recognition") # ai_recognition or text_to_sign
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     user = db.relationship('User', backref=db.backref('requests', lazy=True))
@@ -109,6 +111,13 @@ with app.app_context():
     try:
         db.session.execute(db.text('ALTER TABLE user ADD COLUMN security_question VARCHAR(200)'))
         db.session.execute(db.text('ALTER TABLE user ADD COLUMN security_answer_hash VARCHAR(200)'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        pass
+    
+    try:
+        db.session.execute(db.text('ALTER TABLE word_request ADD COLUMN suggestion_type VARCHAR(50) DEFAULT "ai_recognition"'))
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -1278,7 +1287,7 @@ def admin_dashboard():
         return redirect(url_for('admin_dashboard'))
 
     all_users = User.query.order_by(User.id).all()
-    pending_requests = WordRequest.query.filter_by(status='Pending').order_by(WordRequest.timestamp.desc()).all()
+    pending_requests = WordRequest.query.filter_by(status='Pending', suggestion_type='ai_recognition').order_by(WordRequest.timestamp.desc()).all()
     
     return render_template(
         'admin_dashboard.html',
@@ -1296,8 +1305,25 @@ def load_sign_dictionary():
     try:
         with open(os.path.join(base_dir, 'sign_dictionary.json'), 'r') as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        print(f"Error loading sign dictionary: {e}")
         return {}
+
+def save_sign_dictionary(data):
+    try:
+        with open(os.path.join(base_dir, 'sign_dictionary.json'), 'w') as f:
+            json.dump(data, f, indent=4)
+        return True
+    except Exception as e:
+        print(f"Error saving sign dictionary: {e}")
+        return False
+
+def get_youtube_id(url):
+    """Extract YouTube video ID from various URL formats."""
+    if not url: return None
+    pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
 
 @app.route('/text_to_sign')
 @login_required
@@ -1312,8 +1338,11 @@ def text_to_sign():
 def translate_text():
     data = request.json
     phrase = data.get('phrase', '').lower().strip()
+    # Remove extra punctuation that could interfere with matching, keeping safe chars
+    phrase = re.sub(r'[^a-z0-9\s]', '', phrase)
     
     dictionary = load_sign_dictionary()
+    # Sort keys by length descending to match greedy multi-word phrases first
     keys = sorted(dictionary.keys(), key=len, reverse=True)
     
     results = []
@@ -1328,6 +1357,7 @@ def translate_text():
         matched = False
         for k in keys:
             if remaining.startswith(k):
+                # Ensure we match whole words, not partial prefixes
                 if len(remaining) == len(k) or not remaining[len(k)].isalnum():
                     results.append({'word': k, 'youtube_id': dictionary[k]})
                     remaining = remaining[len(k):]
@@ -1335,13 +1365,138 @@ def translate_text():
                     break
                     
         if not matched:
+            # Word not in dictionary, fallback to character-by-character
             word = remaining.split()[0]
-            clean_word = ''.join(c for c in word if c.isalnum())
-            if clean_word and clean_word not in missing:
-                missing.append(clean_word)
+            for char in word:
+                if char in dictionary:
+                    results.append({'word': char, 'youtube_id': dictionary[char]})
+                elif char not in missing:
+                    missing.append(char)
+            if word not in missing:
+                missing.append(word)
             remaining = remaining[len(word):]
             
     return jsonify({'results': results, 'missing': missing})
+
+# --- Admin Dictionary Routes ---
+
+@app.route('/admin/dictionary', methods=['GET'])
+@admin_required
+def admin_dictionary():
+    dictionary = load_sign_dictionary()
+    pending_requests = WordRequest.query.filter_by(status='Pending', suggestion_type='text_to_sign').order_by(WordRequest.timestamp.desc()).all()
+    return render_template('admin_dictionary.html', username=session.get('username', ''), is_admin=True, dictionary=dictionary, pending_requests=pending_requests)
+
+@app.route('/admin/dictionary/add', methods=['POST'])
+@admin_required
+def admin_dictionary_add():
+    data = request.json
+    phrase = data.get('phrase', '').strip().lower() # Normalization
+    url = data.get('url', '').strip()
+    
+    if not phrase or not url:
+        return jsonify({'success': False, 'error': 'Phrase and Link are required.'})
+        
+    yt_id = get_youtube_id(url)
+    if not yt_id:
+        # Fallback in case they pasted the ID directly
+        if len(url) == 11 and url.isalnum() or '-' in url or '_' in url:
+            yt_id = url
+        else:
+            return jsonify({'success': False, 'error': 'Invalid YouTube Link or ID.'})
+        
+    dictionary = load_sign_dictionary()
+    dictionary[phrase] = yt_id
+    
+    if save_sign_dictionary(dictionary):
+        return jsonify({'success': True, 'message': 'Word added to dictionary successfully!'})
+    return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+
+@app.route('/admin/dictionary/bulk_add', methods=['POST'])
+@admin_required
+def admin_dictionary_bulk_add():
+    data = request.json
+    entries = data.get('entries', [])
+    
+    if not entries:
+        return jsonify({'success': False, 'error': 'No entries provided.'})
+        
+    dictionary = load_sign_dictionary()
+    added_count = 0
+    errors = []
+    
+    for entry in entries:
+        phrase = entry.get('phrase', '').strip().lower()
+        url = entry.get('url', '').strip()
+        
+        if not phrase or not url:
+            continue
+            
+        yt_id = get_youtube_id(url)
+        if not yt_id:
+             if len(url) == 11 and url.isalnum() or '-' in url or '_' in url:
+                 yt_id = url
+             else:
+                 errors.append(f"Invalid URL for '{phrase}'")
+                 continue
+                 
+        dictionary[phrase] = yt_id
+        added_count += 1
+        
+    if added_count > 0:
+        if save_sign_dictionary(dictionary):
+            return jsonify({'success': True, 'message': f'Successfully imported {added_count} words.', 'errors': errors})
+        return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+    return jsonify({'success': False, 'error': 'No valid entries to add.', 'errors': errors})
+
+@app.route('/admin/dictionary/edit', methods=['POST'])
+@admin_required
+def admin_dictionary_edit():
+    data = request.json
+    old_phrase = data.get('old_phrase', '').strip()
+    new_phrase = data.get('new_phrase', '').strip().lower()
+    new_url = data.get('new_url', '').strip()
+    
+    if not old_phrase or not new_phrase or not new_url:
+        return jsonify({'success': False, 'error': 'All fields are required.'})
+        
+    yt_id = get_youtube_id(new_url)
+    if not yt_id:
+        if len(new_url) == 11 and new_url.isalnum() or '-' in new_url or '_' in new_url:
+            yt_id = new_url
+        else:
+            return jsonify({'success': False, 'error': 'Invalid YouTube Link or ID.'})
+            
+    dictionary = load_sign_dictionary()
+    
+    if old_phrase in dictionary:
+        if old_phrase != new_phrase:
+            del dictionary[old_phrase]
+        dictionary[new_phrase] = yt_id
+        
+        if save_sign_dictionary(dictionary):
+            return jsonify({'success': True, 'message': 'Entry updated successfully!'})
+        return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+        
+    return jsonify({'success': False, 'error': 'Original phrase not found.'})
+
+@app.route('/admin/dictionary/delete', methods=['POST'])
+@admin_required
+def admin_dictionary_delete():
+    data = request.json
+    phrase = data.get('phrase', '').strip()
+    
+    if not phrase:
+        return jsonify({'success': False, 'error': 'Phrase is required.'})
+        
+    dictionary = load_sign_dictionary()
+    if phrase in dictionary:
+        del dictionary[phrase]
+        if save_sign_dictionary(dictionary):
+            return jsonify({'success': True, 'message': 'Entry deleted globally.'})
+        return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+        
+    return jsonify({'success': False, 'error': 'Phrase not found.'})
 
 # ==========================================
 # FEEDBACK / REQUEST MODULE ENDPOINTS
@@ -1368,7 +1523,9 @@ def submit_word_request():
     if existing:
         return jsonify({'success': False, 'error': 'You already have a pending request for this word.'})
         
-    new_request = WordRequest(user_id=user.id, requested_word=word)
+    suggestion_type = data.get('type', 'ai_recognition')
+        
+    new_request = WordRequest(user_id=user.id, requested_word=word, suggestion_type=suggestion_type)
     db.session.add(new_request)
     db.session.commit()
     

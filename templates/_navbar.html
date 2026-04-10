@@ -4,11 +4,12 @@
             <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
             <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
             <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
+            <a href="{{ url_for('text_to_sign') }}" class="navbar-item{% if request.endpoint == 'text_to_sign' %} active{% endif %}">Text-to-Sign</a>
             <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
             <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
             {% if is_admin %}
             <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Admin Dashboard</a>
             {% endif %}
         </div>
         <div class="navbar-user">
@@ -17,7 +18,9 @@
             <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </div>
     </nav>
+{% if latest_model_meta is defined and latest_model_meta %}
 <div class="version-strip" style="display:flex;flex-wrap:wrap;gap:14px;padding:6px 20px;background:transparent;color:#ffffff;font-size:0.85em;">
     <span><strong>Dynamic:</strong> v{{ latest_model_meta.dynamic.version }}{% if latest_model_meta.dynamic.notes %} — {{ latest_model_meta.dynamic.notes }}{% endif %}</span>
     <span><strong>Spelling:</strong> v{{ latest_model_meta.spelling.version }}{% if latest_model_meta.spelling.notes %} — {{ latest_model_meta.spelling.notes }}{% endif %}</span>
 </div>
+{% endif %}

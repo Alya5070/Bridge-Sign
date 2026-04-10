@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Dictionary - Bridge Sign</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 20s infinite ease-in-out;
+            opacity: 0.5;
+        }
+
+        .orb-1 { width: 400px; height: 400px; background: #4f46e5; top: -100px; left: -100px; }
+        .orb-2 { width: 500px; height: 500px; background: #2563eb; bottom: -200px; right: -100px; animation-delay: -5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; margin: 1.5rem; z-index: 10;
+            flex-wrap: nowrap; overflow-x: auto;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem; font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-menu { display: flex; gap: 1rem; }
+        .navbar-item {
+            text-decoration: none; color: var(--text-muted); font-weight: 500;
+            padding: 0.5rem 1rem; border-radius: 10px; transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .navbar-item:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
+        .navbar-item.active {
+            color: #fff; background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(99, 102, 241, 0.5); box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .navbar-user { display: flex; align-items: center; gap: 1rem; }
+        .user-avatar {
+            width: 36px; height: 36px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .logout-btn {
+            padding: 0.5rem 1rem; background: rgba(239, 68, 68, 0.1); color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px;
+            text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+        }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.2); color: #fff; }
+
+        .container {
+            max-width: 1000px; margin: 2rem auto; width: calc(100% - 3rem);
+            padding: 2.5rem; display: flex; flex-direction: column; gap: 2rem;
+        }
+
+        .header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .header p { color: var(--text-muted); }
+
+        .admin-card {
+            background: rgba(0, 0, 0, 0.15); padding: 2rem; border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 2rem;
+        }
+
+        .admin-card h2 { font-size: 1.4rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .admin-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+        .form-grid { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        
+        label { font-size: 0.95rem; font-weight: 500; color: var(--text-muted); }
+        
+        input[type="text"], textarea {
+            padding: 0.8rem 1rem; background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px;
+            color: #fff; font-family: inherit; outline: none; transition: all 0.2s;
+            width: 100%;
+        }
+        input[type="text"]:focus, textarea:focus { border-color: var(--primary-light); }
+        
+        .btn-action {
+            margin-top: 1rem; padding: 0.8rem 1.5rem; border: none; border-radius: 10px;
+            font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit;
+        }
+        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+        .btn-primary:hover { background: var(--primary-light); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(99, 102, 241, 0.5); }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .btn-danger:hover { background: var(--danger); color: #fff; transform: translateY(-2px); }
+        
+        .tab-buttons { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted); padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: rgba(79, 70, 229, 0.2); border-color: var(--primary-light); color: #fff;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { padding: 1rem 0.5rem; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); text-align: left; }
+        td { padding: 1rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        
+        .disclaimer-bar {
+            background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b;
+            padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 2rem;
+            color: #fbbf24; font-size: 0.9rem;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+</head>
+
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    {% include '_navbar.html' %}<div class="container glass-panel">
+        <div class="header">
+            <h1>Sign Dictionary Management</h1>
+            <p>Add and edit words mapped to YouTube video IDs for the Text-to-Sign translation module.</p>
+        </div>
+        
+        <div class="disclaimer-bar">
+            <strong>Note:</strong> Dictionary updates only affect the Text-to-Sign video module. New AI recognition labels require dataset collection and model re-training in the Trainer Module. Words are converted to lowercase automatically.
+        </div>
+
+        <div class="admin-card">
+            <h2>Add New Entry</h2>
+            
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('single')">Single Entry</button>
+                <button class="tab-btn" onclick="switchTab('bulk')">Bulk Import</button>
+            </div>
+            
+            <div id="single-tab" class="tab-content active">
+                <div class="form-grid" style="align-items: end;">
+                    <div class="form-group">
+                        <label for="new_phrase">Word or Phrase</label>
+                        <input type="text" id="new_phrase" placeholder="e.g. hello">
+                    </div>
+                    <div class="form-group">
+                        <label for="new_url">YouTube URL or ID</label>
+                        <input type="text" id="new_url" placeholder="https://youtu.be/... or ID">
+                    </div>
+                    <button class="btn-action btn-primary" style="margin: 0;" onclick="addSingleEntry()">Add Word</button>
+                </div>
+            </div>
+            
+            <div id="bulk-tab" class="tab-content">
+                <div class="form-group">
+                    <label>Paste list of words and URLs (format: phrase, url) One per line.</label>
+                    <textarea id="bulk_input" rows="8" placeholder="hello, https://youtu.be/123xyz&#10;thank you, https://youtu.be/456abc"></textarea>
+                </div>
+                <button class="btn-action btn-primary" onclick="addBulkEntries()">Import All</button>
+                <div id="bulk_status" style="margin-top: 1rem; font-size: 0.9rem; color: #34d399;"></div>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h2>Pending Dictionary Requests</h2>
+            <p>User feedback requesting new words for the Text-to-Sign module.</p>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User</th>
+                            <th>Word Requested</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if pending_requests %}
+                            {% for req in pending_requests %}
+                            <tr id="req-row-{{ req.id }}">
+                                <td style="color: var(--text-muted);">{{ req.timestamp.strftime('%Y-%m-%d') }}</td>
+                                <td style="font-weight: 500;">{{ req.user.username }}</td>
+                                <td style="font-size: 1.1rem; color: #60a5fa;">{{ req.requested_word }}</td>
+                                <td style="text-align: right;">
+                                    <button onclick="updateRequest({{ req.id }}, 'Added')" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-right: 0.5rem;">Mark Added</button>
+                                    <button onclick="updateRequest({{ req.id }}, 'Rejected')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Reject</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic;">No pending requests!</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h2>Current Dictionary</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Word / Phrase</th>
+                            <th>YouTube ID</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dict-table-body">
+                        {% for word, yt_id in dictionary.items() %}
+                        <tr id="row-{{ loop.index }}">
+                            <td style="font-weight: 500;">{{ word }}</td>
+                            <td style="color: #a78bfa;">{{ yt_id }}</td>
+                            <td style="text-align: right;">
+                                <button onclick="editEntry('{{ word }}', '{{ yt_id }}')" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-right: 0.5rem;">Edit</button>
+                                <button onclick="deleteEntry('{{ word }}')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Delete</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center;">
+        <div class="glass-panel" style="padding: 2rem; width: 400px; max-width: 90%;">
+            <h3 style="margin-bottom: 1.5rem;">Edit Entry</h3>
+            <input type="hidden" id="edit_old_phrase">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>Phrase</label>
+                <input type="text" id="edit_new_phrase">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label>YouTube ID or Link</label>
+                <input type="text" id="edit_new_url">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn-action" style="background: rgba(255,255,255,0.1); color: white;" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-action btn-primary" onclick="submitEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tabId === 'single') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('single-tab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('bulk-tab').classList.add('active');
+            }
+        }
+
+        async function addSingleEntry() {
+            const phrase = document.getElementById('new_phrase').value;
+            const url = document.getElementById('new_url').value;
+            
+            if (!phrase || !url) {
+                alert("Please fill both fields.");
+                return;
+            }
+            
+            try {
+                const res = await fetch('/admin/dictionary/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({phrase: phrase, url: url})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            } catch(e) {
+                alert("Request failed.");
+            }
+        }
+
+        async function addBulkEntries() {
+            const text = document.getElementById('bulk_input').value;
+            const lines = text.split('\n');
+            const entries = [];
+            
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                // split by first comma
+                const idx = line.indexOf(',');
+                if (idx > -1) {
+                    const phrase = line.substring(0, idx).trim();
+                    const url = line.substring(idx + 1).trim();
+                    entries.push({phrase, url});
+                }
+            }
+            
+            if (entries.length === 0) {
+                alert("No valid entries found. Use format: phrase, url");
+                return;
+            }
+            
+            try {
+                const res = await fetch('/admin/dictionary/bulk_add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({entries: entries})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error + "\n" + (data.errors ? data.errors.join(", ") : ""));
+                }
+            } catch(e) {
+                alert("Request failed.");
+            }
+        }
+
+        function editEntry(phrase, url) {
+            document.getElementById('edit_old_phrase').value = phrase;
+            document.getElementById('edit_new_phrase').value = phrase;
+            document.getElementById('edit_new_url').value = url;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        async function submitEdit() {
+            const oldPhrase = document.getElementById('edit_old_phrase').value;
+            const newPhrase = document.getElementById('edit_new_phrase').value;
+            const newUrl = document.getElementById('edit_new_url').value;
+            
+            try {
+                const res = await fetch('/admin/dictionary/edit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({old_phrase: oldPhrase, new_phrase: newPhrase, new_url: newUrl})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            } catch(e) {
+                alert("Request failed.");
+            }
+        }
+
+        async function deleteEntry(phrase) {
+            if (!confirm(`Are you sure you want to delete '${phrase}'?`)) return;
+            
+            try {
+                const res = await fetch('/admin/dictionary/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({phrase: phrase})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            } catch(e) {
+                alert("Request failed.");
+            }
+        }
+        
+        async function updateRequest(id, status) {
+            try {
+                const res = await fetch('/update_word_request', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({request_id: id, status: status})
+                });
+                const data = await res.json();
+                if(data.success) {
+                    const row = document.getElementById('req-row-' + id);
+                    if(row) {
+                        row.style.opacity = '0.5';
+                        setTimeout(() => row.remove(), 500);
+                    }
+                } else {
+                    alert(data.error);
+                }
+            } catch(e) {
+                alert("Error updating request");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -198,6 +198,29 @@
             color: #60a5fa;
             text-transform: capitalize;
             border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .seq-num {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(99, 102, 241, 0.3);
         }
 
         .iframe-container {
@@ -231,35 +254,26 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .suggestion-box {
+            background: rgba(0,0,0,0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
 
 <body>
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
 
-    <nav class="navbar glass-panel">
-        <div class="navbar-brand">Bridge Sign</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
-            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
-            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
-            <a href="{{ url_for('text_to_sign') }}" class="navbar-item{% if request.endpoint == 'text_to_sign' %} active{% endif %}">Text-to-Sign</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
-            {% if is_admin %}
-            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
-            {% endif %}
-        </div>
-        <div class="navbar-user">
-            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
-            <span>{{ username }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
-
-    <div class="main-container">
+    {% include '_navbar.html' %}<div class="main-container">
         <div class="hero-section glass-panel">
             <h1>Dynamic Translation</h1>
             <p style="color: var(--text-muted);">Type a phrase and we will convert the recognized words into a visual dictionary lookup.</p>
@@ -284,10 +298,45 @@
                 <!-- Videos injected dynamically -->
                 <div class="no-results">Your translated signs will appear here.</div>
             </div>
+
+            <div class="suggestion-box glass-panel">
+                <h3 style="font-size: 1.1rem;">Missing a sign?</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Suggest a new word/phrase for our dictionary, and admins will link a video.</p>
+                <div style="display: flex; gap: 1rem; max-width: 500px;">
+                    <input type="text" id="suggestInput" class="phrase-input" style="padding: 0.8rem;" placeholder="Word to suggest...">
+                    <button class="btn-translate" style="padding: 0 1.5rem;" onclick="submitSuggestion()">Suggest</button>
+                </div>
+                <p id="suggest-feedback" style="font-size: 0.85rem; color: #10b981;"></p>
+            </div>
         </div>
     </div>
 
     <script>
+        async function submitSuggestion() {
+            const input = document.getElementById('suggestInput');
+            const feedback = document.getElementById('suggest-feedback');
+            const word = input.value.trim();
+            
+            if(!word) return;
+            
+            try {
+                const res = await fetch('/submit_word_request', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({word: word, type: 'text_to_sign'})
+                });
+                const data = await res.json();
+                feedback.textContent = data.message || data.error;
+                feedback.style.color = data.success ? '#10b981' : '#f87171';
+                if(data.success) {
+                    input.value = '';
+                }
+            } catch(e) {
+                feedback.textContent = "Error submitting suggestion.";
+                feedback.style.color = '#f87171';
+            }
+        }
+
         function handleEnter(e) {
             if (e.key === 'Enter') {
                 fetchTranslations();
@@ -323,8 +372,8 @@
                     
                     data.results.forEach((item, idx) => {
                         grid.innerHTML += `
-                            <div class="video-card" style="animation-delay: ${idx * 0.1}s">
-                                <div class="video-label">${item.word}</div>
+                            <div class="video-card" style="animation-delay: ${idx * 0.1}s; transition: all 0.3s;">
+                                <div class="video-label"><span class="seq-num">${idx + 1}</span> ${item.word}</div>
                                 <div class="iframe-container">
                                     <iframe src="https://www.youtube.com/embed/${item.youtube_id}" allowfullscreen></iframe>
                                 </div>

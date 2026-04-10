@@ -143,12 +143,12 @@
             z-index: 10;
             display: flex;
             flex-direction: row;
-            gap: 2rem;
+            gap: 1.5rem;
             max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 2rem;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
             align-items: stretch;
-            height: calc(100vh - 120px);
+            min-height: calc(100vh - 120px);
         }
 
         .glass-panel {
@@ -157,7 +157,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-            padding: 2rem;
+            padding: 1.5rem;
         }
 
         .left-col {
@@ -178,7 +178,7 @@
 
         .video-feed {
             width: 100%;
-            max-width: 640px;
+            max-width: 480px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             border: 2px solid rgba(99, 102, 241, 0.3);
@@ -247,8 +247,8 @@
             font-family: monospace;
             padding: 1rem;
             border-radius: 8px;
-            height: 500px !important;
-            min-height: 500px !important;
+            height: 250px !important;
+            min-height: 250px !important;
             overflow-y: auto;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -276,32 +276,13 @@
             border-radius: 12px;
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
 <body>
     <div class="bg-orb orb-1"></div>
     <div class="bg-orb orb-2"></div>
 
-        <nav class="navbar glass-panel">
-        <div class="navbar-brand">Bridge Sign</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
-            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
-            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
-            {% if is_admin %}
-            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
-            {% endif %}
-        </div>
-        <div class="navbar-user">
-            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
-            <span>{{ username }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
-
-    <div class="container">
+        {% include '_navbar.html' %}<div class="container">
         <div class="left-col glass-panel">
             <h2>Camera Feed</h2>
             <img id="videoStream" src="{{ url_for('video_feed') }}" class="video-feed" alt="Trainer Feed">

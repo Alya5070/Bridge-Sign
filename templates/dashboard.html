@@ -578,6 +578,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
 
 <body>
@@ -586,28 +587,7 @@
     <div class="bg-orb orb-2"></div>
     <div class="bg-orb orb-3"></div>
 
-        <nav class="navbar glass-panel">
-        <div class="navbar-brand">Bridge Sign</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
-            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
-            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
-            <a href="{{ url_for('text_to_sign') }}" class="navbar-item{% if request.endpoint == 'text_to_sign' %} active{% endif %}">Text-to-Sign</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
-            {% if is_admin %}
-            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Manage Users</a>
-            {% endif %}
-        </div>
-        <div class="navbar-user">
-            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
-            <span>{{ username }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-    </nav>
-
-    <div class="dashboard-container">
+        {% include '_navbar.html' %}<div class="dashboard-container">
         <div class="page-header">
             <div class="page-title">
                 <h1>Detection Lab</h1>
@@ -776,7 +756,7 @@
                 const res = await fetch('/submit_word_request', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({word: word})
+                    body: JSON.stringify({word: word, type: 'ai_recognition'})
                 });
                 const data = await res.json();
                 msg.textContent = data.message || data.error;

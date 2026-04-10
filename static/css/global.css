@@ -1,0 +1,15 @@
+/* global.css - Universal Rescaling and Theme Override */
+html {
+    font-size: 80%; /* Shrinks all rem-based units (margins, fonts, padding) by 20% to prevent overflow */
+}
+
+:root {
+    /* Override all other inline or template CSS variables globally to the "more black" theme */
+    --bg-gradient: linear-gradient(135deg, #020617 0%, #0f172a 100%) !important;
+    --bg-color: #0f172a !important;
+}
+
+body {
+    background: var(--bg-gradient) !important;
+    background-color: var(--bg-color) !important;
+}
