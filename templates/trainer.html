@@ -295,6 +295,13 @@
                 <label for="label">Sign Label (e.g. A, B, Hello)</label>
                 <input type="text" id="label" class="form-input" placeholder="Enter class label">
             </div>
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="trainingMode">Sign Type</label>
+                <select id="trainingMode" class="form-input" style="background:#1e293b;">
+                    <option value="static">Static Sign</option>
+                    <option value="dynamic">Dynamic Hand Gesture</option>
+                </select>
+            </div>
             
             <button class="btn-action btn-record" id="recordBtn" onclick="startRecording()">Start Recording Data</button>
             <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
@@ -311,8 +318,11 @@
                 > Trainer initialized.<br>
             </div>
 
-            <button class="btn-action btn-train" id="trainBtn" onclick="trainModel()">Train New Model</button>
-            <button class="btn-action btn-test" id="testBtn" onclick="toggleTesting()">Test Trained Model</button>
+            <div style="display: flex; gap: 0.5rem; width: 100%;">
+                <button class="btn-action btn-train" id="trainBtn" onclick="trainModel()" style="flex: 1; font-size: 0.9rem;">Train Static</button>
+                <button class="btn-action btn-train" id="trainDynBtn" onclick="trainDynamicModel()" style="flex: 1; font-size: 0.9rem; background:#4f46e5;">Train Dynamic</button>
+            </div>
+            <button class="btn-action btn-test" id="testBtn" onclick="toggleTesting()">Test Trained Models</button>
 
             <div class="labels-box">
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Labels in the system:</strong></p>
@@ -341,6 +351,7 @@
 
         function startRecording() {
             const label = document.getElementById('label').value.trim();
+            const mode = document.getElementById('trainingMode').value;
             if (!label) { alert("Please enter a label!"); return; }
             
             document.getElementById('recordBtn').disabled = true;
@@ -349,7 +360,7 @@
             fetch('/start_recording', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ label: label, frames: 100 })
+                body: JSON.stringify({ label: label, frames: 100, mode: mode })
             }).then(r => r.json()).then(data => {
                 if (data.success) {
                     document.getElementById('recordBtn').innerText = "Recording...";
@@ -402,9 +413,22 @@
         function trainModel() {
             fetch('/train_model', { method: 'POST' }).then(r => r.json()).then(data => {
                 if(data.success) {
-                    term.innerHTML += "> Starting training via MediaPipe Keypoints...<br>";
+                    term.innerHTML += "> Starting STATIC training via MediaPipe Keypoints...<br>";
                     trainingInterval = setInterval(checkTrainingStatus, 1000);
                     document.getElementById('trainBtn').disabled = true;
+                } else {
+                    term.innerHTML += `> <span style="color:red">${data.error}</span><br>`;
+                }
+                term.scrollTop = term.scrollHeight;
+            });
+        }
+        
+        function trainDynamicModel() {
+            fetch('/train_dynamic_model', { method: 'POST' }).then(r => r.json()).then(data => {
+                if(data.success) {
+                    term.innerHTML += "> Starting DYNAMIC Gesture training...<br>";
+                    trainingInterval = setInterval(checkTrainingStatus, 1000);
+                    document.getElementById('trainDynBtn').disabled = true;
                 } else {
                     term.innerHTML += `> <span style="color:red">${data.error}</span><br>`;
                 }
@@ -420,6 +444,7 @@
                 if(!data.is_training) {
                     clearInterval(trainingInterval);
                     document.getElementById('trainBtn').disabled = false;
+                    document.getElementById('trainDynBtn').disabled = false;
                 }
             });
         }

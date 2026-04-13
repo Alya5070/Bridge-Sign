@@ -12,6 +12,10 @@ import json
 import threading
 from datetime import datetime
 import re
+from collections import deque
+import itertools
+import time
+from tensorflow.keras.models import load_model as keras_load_model
 
 # --- MACHINE LEARNING & TRAINER IMPORTS ---
 import mediapipe as mp
@@ -54,7 +58,7 @@ csv_filepath = os.path.join(dataset_dir, 'asl_mediapipe_keypoints_dataset.csv')
 
 # MediaPipe hands setup for Trainer Module
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=1)
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=2)
 mp_drawing = mp.solutions.drawing_utils
 
 def get_normalized_landmarks(hand_landmarks, flip_x=False):
@@ -164,6 +168,7 @@ def load_model(mode):
 offset = 30
 imgSize = 300
 current_prediction = ""
+current_dynamic_prediction = ""
 confidence_scores = []
 practice_word = ""
 current_letter_index = 0
@@ -184,6 +189,53 @@ target_frames = 100
 custom_model = None
 custom_labels = []
 training_log = []
+
+# Dynamic Tracking variables
+history_length = 16
+point_history_primary = deque(maxlen=history_length)
+point_history_secondary = deque(maxlen=history_length)
+dynamic_predictions = deque(maxlen=3)
+dynamic_cooldown_until = 0.0
+dynamic_model_predict = None
+dynamic_labels = []
+
+def calc_ema(current, previous, alpha=0.5):
+    if previous == [0.0, 0.0]:
+        return current
+    return [
+        previous[0] * (1 - alpha) + current[0] * alpha,
+        previous[1] * (1 - alpha) + current[1] * alpha
+    ]
+
+def get_bounding_box(image, hand_landmarks):
+    image_width, image_height = image.shape[1], image.shape[0]
+    landmark_array = np.empty((0, 2), int)
+
+    for _, landmark in enumerate(hand_landmarks.landmark):
+        landmark_x = min(int(landmark.x * image_width), image_width - 1)
+        landmark_y = min(int(landmark.y * image_height), image_height - 1)
+        landmark_array = np.append(landmark_array, [np.array((landmark_x, landmark_y))], axis=0)
+
+    x, y, w, h = cv2.boundingRect(landmark_array)
+    return [x, y, x + w, y + h]
+
+import copy
+def pre_process_point_history(point_history, bounding_box):
+    # bounding box: [x_min, y_min, x_max, y_max]
+    box_w = max((bounding_box[2] - bounding_box[0]), 1)
+    box_h = max((bounding_box[3] - bounding_box[1]), 1)
+    scale = max(box_w, box_h)
+    
+    temp_point_history = copy.deepcopy(point_history)
+    base_x, base_y = 0, 0
+    for index, point in enumerate(temp_point_history):
+        if index == 0:
+            base_x, base_y = point[0], point[1]
+
+        temp_point_history[index][0] = (temp_point_history[index][0] - base_x) / scale
+        temp_point_history[index][1] = (temp_point_history[index][1] - base_y) / scale
+
+    return list(itertools.chain.from_iterable(temp_point_history))
 
 # Camera caching
 cached_cameras = []
@@ -253,9 +305,9 @@ camera_lock = threading.Lock()
 hands_lock = threading.Lock()
 active_index = -1
 def generate_frames():
-    global current_prediction, confidence_scores, camera_active, current_camera_index
+    global current_prediction, current_dynamic_prediction, confidence_scores, camera_active, current_camera_index
     global camera_mode, is_recording, is_testing, current_label, frames_recorded, target_frames, custom_model, custom_labels
-    global cap, active_index
+    global cap, active_index, dynamic_cooldown_until
     
     dark_frame_count = 0
     
@@ -354,7 +406,7 @@ def generate_frames():
             imgOutput = img.copy()
 
             # ---------------------------------------------
-            # BRANCH 1: NORMAL TRANSLATION MODE (MediaPipe Custom)
+            # BRANCH 1: NORMAL TRANSLATION MODE (MediaPipe)
             # ---------------------------------------------
             if camera_mode == 'translation':
                 imgOutput = cv2.flip(imgOutput, 1) # Mirroring for user friendliness
@@ -363,101 +415,199 @@ def generate_frames():
                 with hands_lock:
                     results = hands.process(rgb_img)
                 
-                if results.multi_hand_landmarks and results.multi_handedness:
-                    for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                        hand_type = handedness.classification[0].label
-                        
-                        # Mirror Right Hand coords to Left Hand geometry for standard detection
-                        flip_x = (hand_type == 'Right')
-                        
+                primary_hand_landmarks = [0.0] * 63
+                secondary_hand_landmarks = [0.0] * 63
+                idx_point_primary = [0.0, 0.0]
+                idx_point_secondary = [0.0, 0.0]
+                valid_bounding_box = [0, 0, imgOutput.shape[1], imgOutput.shape[0]]
+
+                if results.multi_hand_landmarks:
+                    for i, (hand_landmarks, handedness) in enumerate(zip(results.multi_hand_landmarks, results.multi_handedness)):
                         mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                        landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
+                        hand_type = handedness.classification[0].label
+                        normalized_lms = get_normalized_landmarks(hand_landmarks, flip_x=(hand_type == 'Right'))
                         
-                        if custom_model is not None and len(custom_labels) > 0:
-                            try:
-                                # FAST INFERENCE: Using __call__ directly on tensor avoids the .predict() callback overhead
-                                input_tensor = tf.convert_to_tensor([landmarks])
-                                prediction = custom_model(input_tensor, training=False).numpy()
-                                class_id = np.argmax(prediction)
-                                pred_confidence = prediction[0][class_id]
-                                
-                                if pred_confidence > 0.5:
-                                    current_prediction = custom_labels[class_id]
-                                    confidence_scores = prediction[0].tolist()
-                                    cv2.putText(imgOutput, f"{current_prediction} ({pred_confidence*100:.1f}%)", (50, 50),
-                                                cv2.FONT_HERSHEY_COMPLEX, 1.2, (0, 255, 0), 2)
-                                else:
-                                    current_prediction = "Low confidence"
-                                    confidence_scores = []
-                            except Exception as e:
-                                print(f"Error predicting: {e}")
-                                current_prediction = "Prediction Error"
-                                confidence_scores = []
-                        else:
-                            current_prediction = "Model not loaded"
-                            confidence_scores = []
-                            cv2.putText(imgOutput, "Model not loaded. Train in Trainer Module.", (20, 50),
-                                        cv2.FONT_HERSHEY_COMPLEX, 0.8, (0, 0, 255), 2)
+                        if i == 0:
+                            primary_hand_landmarks = normalized_lms
+                            idx_point_primary = [hand_landmarks.landmark[8].x * imgOutput.shape[1], hand_landmarks.landmark[8].y * imgOutput.shape[0]]
+                            valid_bounding_box = get_bounding_box(imgOutput, hand_landmarks)
+                        elif i == 1:
+                            secondary_hand_landmarks = normalized_lms
+                            idx_point_secondary = [hand_landmarks.landmark[8].x * imgOutput.shape[1], hand_landmarks.landmark[8].y * imgOutput.shape[0]]
+                            box2 = get_bounding_box(imgOutput, hand_landmarks)
+                            valid_bounding_box = [min(valid_bounding_box[0], box2[0]), min(valid_bounding_box[1], box2[1]),
+                                                  max(valid_bounding_box[2], box2[2]), max(valid_bounding_box[3], box2[3])]
+                
+                combined_126_landmarks = primary_hand_landmarks + secondary_hand_landmarks
+                
+                if results.multi_hand_landmarks:
+                    smoothed_primary = calc_ema(idx_point_primary, point_history_primary[-1] if len(point_history_primary) > 0 else [0.0,0.0])
+                    smoothed_secondary = calc_ema(idx_point_secondary, point_history_secondary[-1] if len(point_history_secondary) > 0 else [0.0,0.0])
+                    point_history_primary.append(smoothed_primary)
+                    point_history_secondary.append(smoothed_secondary)
                 else:
-                    current_prediction = "No hand detected"
-                    confidence_scores = []
+                    point_history_primary.append([0.0, 0.0])
+                    point_history_secondary.append([0.0, 0.0])
+
+                for hist in [point_history_primary, point_history_secondary]:
+                    for p in hist:
+                        if p[0] != 0 and p[1] != 0:
+                            cv2.circle(imgOutput, (int(p[0]), int(p[1])), 3, (152, 251, 152), -1)
+
+                static_pred = "Waiting..."
+                dyn_pred_text = ""
+
+                if custom_model is not None and len(custom_labels) > 0 and results.multi_hand_landmarks:
+                    try:
+                        input_tensor = tf.convert_to_tensor([combined_126_landmarks])
+                        prediction = custom_model(input_tensor, training=False).numpy()
+                        class_id = np.argmax(prediction)
+                        if prediction[0][class_id] > 0.5:
+                            static_pred = custom_labels[class_id]
+                    except Exception:
+                        static_pred = "Error"
+                
+                if dynamic_model_predict is not None and len(dynamic_labels) > 0:
+                    if len(point_history_primary) == history_length:
+                        try:
+                            proc_prim = pre_process_point_history(point_history_primary, valid_bounding_box)
+                            proc_sec = pre_process_point_history(point_history_secondary, valid_bounding_box)
+                            combined_history = proc_prim + proc_sec
+                            
+                            input_tensor_dyn = tf.convert_to_tensor([combined_history])
+                            prediction_dyn = dynamic_model_predict(input_tensor_dyn, training=False).numpy()
+                            dyn_class_id = np.argmax(prediction_dyn)
+                            
+                            current_time = time.time()
+                            if prediction_dyn[0][dyn_class_id] > 0.85 and current_time > dynamic_cooldown_until:
+                                dynamic_predictions.append(dyn_class_id)
+                                if len(dynamic_predictions) == 3 and len(set(dynamic_predictions)) == 1:
+                                    dyn_pred_text = dynamic_labels[dyn_class_id]
+                                    dynamic_cooldown_until = current_time + 1.5
+                                    dynamic_predictions.clear()
+                        except Exception:
+                            pass
+                
+                current_prediction = f"{static_pred}"
+                if time.time() < dynamic_cooldown_until:
+                    pass
+                if dyn_pred_text:
+                    current_dynamic_prediction = dyn_pred_text
+                elif time.time() > dynamic_cooldown_until:
+                    current_dynamic_prediction = ""
+                    
+                display_str = current_prediction
+                if current_dynamic_prediction:
+                    display_str += f" / {current_dynamic_prediction}"
+                    
+                cv2.putText(imgOutput, display_str, (20, 50), cv2.FONT_HERSHEY_COMPLEX, 1.0, (0, 255, 0), 2)
                     
             # ---------------------------------------------
-            # BRANCH 2: TRAINING / TESTING MODE (MediaPipe)
+            # BRANCH 2: TRAINING / TESTING MODE 
             # ---------------------------------------------
-            elif camera_mode in ['training_idle', 'testing']:
+            elif camera_mode in ['training_idle', 'testing', 'training_dynamic']:
                 imgOutput = cv2.flip(imgOutput, 1) # Selfie view for training
                 rgb_img = cv2.cvtColor(imgOutput, cv2.COLOR_BGR2RGB)
                 
                 with hands_lock:
                     results = hands.process(rgb_img)
                 
-                pred_label = None
-                pred_confidence = 0.0
+                primary_hand_landmarks = [0.0] * 63
+                secondary_hand_landmarks = [0.0] * 63
+                idx_point_primary = [0.0, 0.0]
+                idx_point_secondary = [0.0, 0.0]
+                valid_bounding_box = [0, 0, imgOutput.shape[1], imgOutput.shape[0]]
 
-                if results.multi_hand_landmarks and results.multi_handedness:
-                    for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                        hand_type = handedness.classification[0].label
-                        
-                        # Standardize all data to Left Hand geometry by mirroring Right hands
-                        flip_x = (hand_type == 'Right')
-                        
+                if results.multi_hand_landmarks:
+                    for i, (hand_landmarks, handedness) in enumerate(zip(results.multi_hand_landmarks, results.multi_handedness)):
                         mp_drawing.draw_landmarks(imgOutput, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                        landmarks = get_normalized_landmarks(hand_landmarks, flip_x=flip_x)
+                        hand_type = handedness.classification[0].label
+                        normalized_lms = get_normalized_landmarks(hand_landmarks, flip_x=(hand_type == 'Right'))
+                        
+                        if i == 0:
+                            primary_hand_landmarks = normalized_lms
+                            idx_point_primary = [hand_landmarks.landmark[8].x * imgOutput.shape[1], hand_landmarks.landmark[8].y * imgOutput.shape[0]]
+                            valid_bounding_box = get_bounding_box(imgOutput, hand_landmarks)
+                        elif i == 1:
+                            secondary_hand_landmarks = normalized_lms
+                            idx_point_secondary = [hand_landmarks.landmark[8].x * imgOutput.shape[1], hand_landmarks.landmark[8].y * imgOutput.shape[0]]
+                            box2 = get_bounding_box(imgOutput, hand_landmarks)
+                            valid_bounding_box = [min(valid_bounding_box[0], box2[0]), min(valid_bounding_box[1], box2[1]),
+                                                  max(valid_bounding_box[2], box2[2]), max(valid_bounding_box[3], box2[3])]
 
-                        if is_recording and frames_recorded < target_frames:
-                            with open(csv_filepath, mode='a', newline='') as f:
+                combined_126_landmarks = primary_hand_landmarks + secondary_hand_landmarks
+
+                if results.multi_hand_landmarks:
+                    smoothed_primary = calc_ema(idx_point_primary, point_history_primary[-1] if len(point_history_primary) > 0 else [0.0,0.0])
+                    smoothed_secondary = calc_ema(idx_point_secondary, point_history_secondary[-1] if len(point_history_secondary) > 0 else [0.0,0.0])
+                    point_history_primary.append(smoothed_primary)
+                    point_history_secondary.append(smoothed_secondary)
+                else:
+                    point_history_primary.append([0.0, 0.0])
+                    point_history_secondary.append([0.0, 0.0])
+
+                if is_recording and frames_recorded < target_frames:
+                    if camera_mode == 'training_dynamic':
+                        # For dynamic, we wait until we have a full history buffer before taking a reading
+                        if len(point_history_primary) == history_length:
+                            proc_prim = pre_process_point_history(point_history_primary, valid_bounding_box)
+                            proc_sec = pre_process_point_history(point_history_secondary, valid_bounding_box)
+                            dynamic_filepath = os.path.join(dataset_dir, 'dynamic_point_history.csv')
+                            with open(dynamic_filepath, mode='a', newline='') as f:
                                 writer = csv.writer(f)
-                                row = [current_label] + landmarks
-                                writer.writerow(row)
-                            
+                                writer.writerow([current_label] + proc_prim + proc_sec)
                             frames_recorded += 1
-                            if frames_recorded >= target_frames:
-                                is_recording = False
+                    else:
+                        with open(csv_filepath, mode='a', newline='') as f:
+                            writer = csv.writer(f)
+                            writer.writerow([current_label] + combined_126_landmarks)
+                        frames_recorded += 1
+                        
+                    if frames_recorded >= target_frames:
+                        is_recording = False
 
-                        elif is_testing and custom_model is not None and custom_labels:
-                            try:
-                                # FAST INFERENCE
-                                input_tensor = tf.convert_to_tensor([landmarks])
-                                prediction = custom_model(input_tensor, training=False).numpy()
-                                class_id = np.argmax(prediction)
-                                pred_confidence = prediction[0][class_id]
-                                if pred_confidence > 0.5:
-                                    pred_label = custom_labels[class_id]
-                            except Exception:
-                                pass
-                
+                pred_label = ""
+                dyn_pred_text = ""
+                pred_confidence = 0.0
+                if is_testing:
+                    if custom_model is not None and custom_labels and results.multi_hand_landmarks:
+                        try:
+                            input_tensor = tf.convert_to_tensor([combined_126_landmarks])
+                            prediction = custom_model(input_tensor, training=False).numpy()
+                            class_id = np.argmax(prediction)
+                            pred_confidence = prediction[0][class_id]
+                            if pred_confidence > 0.5:
+                                pred_label = custom_labels[class_id]
+                        except Exception:
+                            pass
+                    
+                    if dynamic_model_predict is not None and dynamic_labels and len(point_history_primary) == history_length:
+                        try:
+                            proc_prim = pre_process_point_history(point_history_primary, valid_bounding_box)
+                            proc_sec = pre_process_point_history(point_history_secondary, valid_bounding_box)
+                            combined_history = proc_prim + proc_sec
+                            
+                            input_tensor_dyn = tf.convert_to_tensor([combined_history])
+                            prediction_dyn = dynamic_model_predict(input_tensor_dyn, training=False).numpy()
+                            dyn_class_id = np.argmax(prediction_dyn)
+                            if prediction_dyn[0][dyn_class_id] > 0.8:
+                                dyn_pred_text = dynamic_labels[dyn_class_id]
+                        except Exception:
+                            pass
                 # Overlay UI instructions over the training feed
                 if is_recording:
                     cv2.putText(imgOutput, f"Recording: {frames_recorded}/{target_frames}", (10, 50), 
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 elif is_testing:
+                    display_text = ""
                     if pred_label:
-                        cv2.putText(imgOutput, f"Sign: {pred_label} ({pred_confidence*100:.1f}%)", (10, 50), 
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-                    else:
-                        cv2.putText(imgOutput, "Testing mode: Waiting for sign...", (10, 50), 
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+                        display_text += f"{pred_label} ({pred_confidence*100:.1f}%)"
+                    if dyn_pred_text:
+                        display_text += f" / {dyn_pred_text}"
+                    if display_text == "":
+                        display_text = "Waiting for sign..."
+                    cv2.putText(imgOutput, f"Testing: {display_text}", (10, 50), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
                 else:
                     cv2.putText(imgOutput, "Ready. Show sign to begin.", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
@@ -867,6 +1017,7 @@ def get_prediction():
 
     return jsonify({
         'prediction': current_prediction,
+        'dynamic_prediction': current_dynamic_prediction,
         'confidence': safe_confidence,
         'practice_active': practice_active,
         'practice_word': practice_word,
@@ -967,19 +1118,29 @@ def admin_required(f):
 # ==========================================
 
 def load_custom_model():
-    global custom_model, custom_labels, labels
+    global custom_model, custom_labels, labels, dynamic_model_predict, dynamic_labels
     model_path = os.path.join(base_dir, 'Model', 'new_custom_model.h5')
     labels_path = os.path.join(base_dir, 'Model', 'new_custom_labels.txt')
     
+    dyn_model_path = os.path.join(base_dir, 'dynamic_custom_model.h5')
+    dyn_labels_path = os.path.join(base_dir, 'dynamic_labels.json')
+    
+    tf.keras.backend.clear_session()
+    
+    loaded_static = False
     if os.path.exists(model_path) and os.path.exists(labels_path):
-        # Prevent memory leaks when reloading models repeatedly
-        tf.keras.backend.clear_session()
-        custom_model = tf.keras.models.load_model(model_path)
-        with open(labels_path, 'r') as f:
+        custom_model = keras_load_model(model_path)
+        with open(labels_path, 'r', encoding='utf-8') as f:
             custom_labels = [line.strip() for line in f.readlines()]
             labels = custom_labels
-        return True
-    return False
+        loaded_static = True
+        
+    if os.path.exists(dyn_model_path) and os.path.exists(dyn_labels_path):
+        dynamic_model_predict = keras_load_model(dyn_model_path)
+        with open(dyn_labels_path, 'r', encoding='utf-8') as f:
+            dynamic_labels = json.load(f)
+            
+    return loaded_static
 
 def train_model_thread():
     global is_training, training_log
@@ -1094,6 +1255,7 @@ def start_recording():
     data = request.json
     label = data.get('label', '').strip().upper()
     frames = data.get('frames', 100)
+    mode = data.get('mode', 'static') # 'static' or 'dynamic'
     
     if not label:
         return jsonify({'success': False, 'error': 'Label is required'})
@@ -1102,7 +1264,7 @@ def start_recording():
     target_frames = int(frames)
     frames_recorded = 0
     is_recording = True
-    camera_mode = 'training_idle'
+    camera_mode = 'training_dynamic' if mode == 'dynamic' else 'training_idle'
     
     return jsonify({'success': True, 'message': f'Started recording for label: {label}'})
 
@@ -1152,6 +1314,39 @@ def train_model():
     thread.start()
     
     return jsonify({'success': True, 'message': 'Training started in background'})
+
+def train_dynamic_model_thread():
+    global is_training, training_log
+    try:
+        training_log.append("Starting Dynamic Gesture Training...")
+        import dynamic_model
+        success = dynamic_model.train_dynamic_model(training_log)
+        if success:
+            training_log.append("Training Dynamic Model complete! Ready for use.")
+        else:
+            training_log.append("Error: Failed to train dynamic model.")
+    except Exception as e:
+        training_log.append(f"Error during training: {str(e)}")
+        print(e)
+    finally:
+        is_training = False
+
+@app.route('/train_dynamic_model', methods=['POST'])
+@admin_required
+def route_train_dynamic_model():
+    global is_training, training_log
+    
+    if is_training:
+        return jsonify({'success': False, 'error': 'Training is already in progress'})
+        
+    is_training = True
+    training_log = []
+    
+    thread = threading.Thread(target=train_dynamic_model_thread)
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({'success': True, 'message': 'Dynamic Training started in background'})
 
 @app.route('/training_status')
 @admin_required
