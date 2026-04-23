@@ -55,10 +55,11 @@ db = SQLAlchemy(app)
 dataset_dir = os.path.join(base_dir, 'dataset')
 os.makedirs(dataset_dir, exist_ok=True)
 csv_filepath = os.path.join(dataset_dir, 'asl_mediapipe_keypoints_dataset.csv')
+dynamic_filepath = os.path.join(dataset_dir, 'dynamic_point_history.csv')
 
 # MediaPipe hands setup for Trainer Module
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=2)
+hands = mp_hands.Hands(min_detection_confidence=0.3, min_tracking_confidence=0.3, max_num_hands=2)
 mp_drawing = mp.solutions.drawing_utils
 
 def get_normalized_landmarks(hand_landmarks, flip_x=False):
@@ -181,6 +182,8 @@ current_camera_index = 0
 # Trainer Module Globals
 camera_mode = 'training_idle'  # spelling, words, training_idle, training_record, testing
 is_recording = False
+countdown_active = False
+countdown_start_time = 0.0
 is_testing = False
 is_training = False
 current_label = ""
@@ -307,7 +310,7 @@ active_index = -1
 def generate_frames():
     global current_prediction, current_dynamic_prediction, confidence_scores, camera_active, current_camera_index
     global camera_mode, is_recording, is_testing, current_label, frames_recorded, target_frames, custom_model, custom_labels
-    global cap, active_index, dynamic_cooldown_until
+    global cap, active_index, countdown_active, countdown_start_time, dynamic_cooldown_until
     
     dark_frame_count = 0
     
@@ -440,22 +443,24 @@ def generate_frames():
                 
                 combined_126_landmarks = primary_hand_landmarks + secondary_hand_landmarks
                 
+                static_pred = ""
+                dyn_pred_text = ""
+
                 if results.multi_hand_landmarks:
                     smoothed_primary = calc_ema(idx_point_primary, point_history_primary[-1] if len(point_history_primary) > 0 else [0.0,0.0])
                     smoothed_secondary = calc_ema(idx_point_secondary, point_history_secondary[-1] if len(point_history_secondary) > 0 else [0.0,0.0])
                     point_history_primary.append(smoothed_primary)
                     point_history_secondary.append(smoothed_secondary)
                 else:
-                    point_history_primary.append([0.0, 0.0])
-                    point_history_secondary.append([0.0, 0.0])
+                    point_history_primary.clear()
+                    point_history_secondary.clear()
+                    dynamic_predictions.clear()
+                    dynamic_cooldown_until = 0.0
 
                 for hist in [point_history_primary, point_history_secondary]:
                     for p in hist:
                         if p[0] != 0 and p[1] != 0:
                             cv2.circle(imgOutput, (int(p[0]), int(p[1])), 3, (152, 251, 152), -1)
-
-                static_pred = "Waiting..."
-                dyn_pred_text = ""
 
                 if custom_model is not None and len(custom_labels) > 0 and results.multi_hand_landmarks:
                     try:
@@ -463,11 +468,17 @@ def generate_frames():
                         prediction = custom_model(input_tensor, training=False).numpy()
                         class_id = np.argmax(prediction)
                         if prediction[0][class_id] > 0.5:
-                            static_pred = custom_labels[class_id]
+                            cand_label = custom_labels[class_id]
+                            if active_mode == 'spelling':
+                                if len(cand_label) == 1: static_pred = cand_label
+                            elif active_mode == 'words':
+                                if len(cand_label) > 1: static_pred = cand_label
+                            else:
+                                static_pred = cand_label
                     except Exception:
                         static_pred = "Error"
                 
-                if dynamic_model_predict is not None and len(dynamic_labels) > 0:
+                if dynamic_model_predict is not None and len(dynamic_labels) > 0 and active_mode != 'spelling':
                     if len(point_history_primary) == history_length:
                         try:
                             proc_prim = pre_process_point_history(point_history_primary, valid_bounding_box)
@@ -543,8 +554,19 @@ def generate_frames():
                     point_history_primary.append(smoothed_primary)
                     point_history_secondary.append(smoothed_secondary)
                 else:
-                    point_history_primary.append([0.0, 0.0])
-                    point_history_secondary.append([0.0, 0.0])
+                    point_history_primary.clear()
+                    point_history_secondary.clear()
+
+                if countdown_active:
+                    elapsed = time.time() - countdown_start_time
+                    if elapsed >= 3.0:
+                        countdown_active = False
+                        is_recording = True
+                    else:
+                        remaining = 3 - int(elapsed)
+                        # Add countdown overlay
+                        cv2.putText(imgOutput, f"Starting in {remaining}...", (160, 240), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 4)
 
                 if is_recording and frames_recorded < target_frames:
                     if camera_mode == 'training_dynamic':
@@ -577,11 +599,17 @@ def generate_frames():
                             class_id = np.argmax(prediction)
                             pred_confidence = prediction[0][class_id]
                             if pred_confidence > 0.5:
-                                pred_label = custom_labels[class_id]
+                                cand_label = custom_labels[class_id]
+                                if active_mode == 'spelling':
+                                    if len(cand_label) == 1: pred_label = cand_label
+                                elif active_mode == 'words':
+                                    if len(cand_label) > 1: pred_label = cand_label
+                                else:
+                                    pred_label = cand_label
                         except Exception:
                             pass
                     
-                    if dynamic_model_predict is not None and dynamic_labels and len(point_history_primary) == history_length:
+                    if dynamic_model_predict is not None and dynamic_labels and len(point_history_primary) == history_length and active_mode != 'spelling':
                         try:
                             proc_prim = pre_process_point_history(point_history_primary, valid_bounding_box)
                             proc_sec = pre_process_point_history(point_history_secondary, valid_bounding_box)
@@ -1048,16 +1076,20 @@ def switch_mode():
 @login_required
 def get_labels():
     mode = request.args.get('mode', active_mode)
-    curr_active = active_mode
     
-    # Temporarily switch to read labels if different
-    if mode != active_mode:
-        load_model(mode)
-        resp_labels = labels.copy()
-        load_model(curr_active) # switch back
-        return jsonify({'labels': resp_labels})
+    # Always operate on the globally loaded unified labels
+    # Combine static and dynamic arrays to form a unified label pool, keeping unique ordering
+    unified_labels = list(dict.fromkeys(labels + dynamic_labels))
     
-    return jsonify({'labels': labels})
+    # Filter based on length to determine category
+    if mode == 'spelling':
+        filtered = [lbl for lbl in unified_labels if len(lbl) == 1]
+    elif mode == 'words':
+        filtered = [lbl for lbl in unified_labels if len(lbl) > 1]
+    else:
+        filtered = unified_labels
+        
+    return jsonify({'labels': filtered})
 
 
 @app.route('/set_practice_word', methods=['POST'])
@@ -1131,14 +1163,16 @@ def load_custom_model():
     if os.path.exists(model_path) and os.path.exists(labels_path):
         custom_model = keras_load_model(model_path)
         with open(labels_path, 'r', encoding='utf-8') as f:
-            custom_labels = [line.strip() for line in f.readlines()]
+            # Erase any null bytes that may inflate character length
+            custom_labels = [line.replace('\x00', '').strip() for line in f.readlines()]
             labels = custom_labels
         loaded_static = True
         
     if os.path.exists(dyn_model_path) and os.path.exists(dyn_labels_path):
         dynamic_model_predict = keras_load_model(dyn_model_path)
         with open(dyn_labels_path, 'r', encoding='utf-8') as f:
-            dynamic_labels = json.load(f)
+            raw_dyn_labels = json.load(f)
+            dynamic_labels = [str(lbl).replace('\x00', '').strip() for lbl in raw_dyn_labels]
             
     return loaded_static
 
@@ -1251,6 +1285,7 @@ def trainer():
 @admin_required
 def start_recording():
     global is_recording, current_label, frames_recorded, target_frames, camera_mode
+    global countdown_active, countdown_start_time
     
     data = request.json
     label = data.get('label', '').strip().upper()
@@ -1263,10 +1298,13 @@ def start_recording():
     current_label = label
     target_frames = int(frames)
     frames_recorded = 0
-    is_recording = True
+    is_recording = False
+    countdown_active = True
+    countdown_start_time = time.time()
+    
     camera_mode = 'training_dynamic' if mode == 'dynamic' else 'training_idle'
     
-    return jsonify({'success': True, 'message': f'Started recording for label: {label}'})
+    return jsonify({'success': True, 'message': f'Timer started for label: {label}'})
 
 @app.route('/get_status')
 @admin_required
@@ -1366,25 +1404,42 @@ def delete_label():
     if not label_to_delete:
         return jsonify({'success': False, 'error': 'Label is required'})
         
-    if not os.path.exists(csv_filepath):
+    if not os.path.exists(csv_filepath) and not os.path.exists(dynamic_filepath):
         return jsonify({'success': False, 'error': 'Dataset file not found'})
         
     try:
-        rows = []
         deleted_count = 0
-        with open(csv_filepath, 'r') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) > 0:
-                    # Check first or last column for label
-                    if row[0].upper() == label_to_delete or row[-1].upper() == label_to_delete:
-                        deleted_count += 1
-                        continue
-                    rows.append(row)
-                    
-        with open(csv_filepath, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(rows)
+        
+        if os.path.exists(csv_filepath):
+            rows = []
+            with open(csv_filepath, 'r') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) > 0:
+                        # Check first or last column for label
+                        if row[0].upper() == label_to_delete or row[-1].upper() == label_to_delete:
+                            deleted_count += 1
+                            continue
+                        rows.append(row)
+                        
+            with open(csv_filepath, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(rows)
+                
+        if os.path.exists(dynamic_filepath):
+            rows = []
+            with open(dynamic_filepath, 'r') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) > 0:
+                        if row[0].upper() == label_to_delete:
+                            deleted_count += 1
+                            continue
+                        rows.append(row)
+                        
+            with open(dynamic_filepath, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(rows)
             
         return jsonify({
             'success': True, 
@@ -1397,17 +1452,29 @@ def delete_label():
 @admin_required
 def get_dataset_labels():
     """Fetches unique labels from the dataset CSV."""
-    if not os.path.exists(csv_filepath):
+    if not os.path.exists(csv_filepath) and not os.path.exists(dynamic_filepath):
         return jsonify({'success': True, 'labels': []})
         
     try:
         labels_found = set()
-        with open(csv_filepath, 'r') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) > 1:
-                    # Skip header or malformed rows
-                    if row[0].lower() == 'label' or not row[1].replace('.', '', 1).replace('-', '', 1).isdigit():
+        
+        if os.path.exists(csv_filepath):
+            with open(csv_filepath, 'r') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) != 64:
+                        continue
+                        
+                    is_header = False
+                    if row[0].lower() == 'label':
+                        is_header = True
+                    else:
+                        try:
+                            float(row[1])
+                        except ValueError:
+                            is_header = True
+                    
+                    if is_header:
                         continue
                     
                     # Logic matches train_model_thread for label extraction
@@ -1416,6 +1483,13 @@ def get_dataset_labels():
                         labels_found.add(row[0].upper())
                     except ValueError:
                         labels_found.add(row[-1].upper())
+                        
+        if os.path.exists(dynamic_filepath):
+            with open(dynamic_filepath, 'r') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if len(row) == 127:  # Dynamic row format: label + 126 coordinate values
+                        labels_found.add(row[0].upper())
                         
         sorted_labels = sorted(list(labels_found))
         return jsonify({'success': True, 'labels': sorted_labels})

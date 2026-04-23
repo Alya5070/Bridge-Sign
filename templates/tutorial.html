@@ -398,9 +398,20 @@
             }
         }
 
-        // Start polling every 200ms
-        setInterval(pollPrediction, 200);
-        updateUI();
+        // Initialize tutorial by forcing backend into spelling mode
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await fetch('/switch_mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'spelling' })
+                });
+            } catch (e) { console.error('Failed to init tutorial mode:', e); }
+
+            // Start polling every 200ms
+            setInterval(pollPrediction, 200);
+            updateUI();
+        });
     </script>
 </body>
 

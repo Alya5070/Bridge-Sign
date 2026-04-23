@@ -783,11 +783,15 @@
                 const data = await res.json();
 
                 const pred = data.prediction || "";
-                document.getElementById('currentPredStat').textContent = pred ? pred : "-";
+                const dynPred = data.dynamic_prediction || "";
+                
+                // Show either the dynamic prediction if it exists, otherwise static pred
+                const displayPred = dynPred || pred;
+                document.getElementById('currentPredStat').textContent = displayPred ? displayPred : "-";
                 
                 const targetBox = document.getElementById('targetDisplay');
 
-                if (pred.toUpperCase() === currentTarget.toUpperCase()) {
+                if (pred.toUpperCase() === currentTarget.toUpperCase() || dynPred.toUpperCase() === currentTarget.toUpperCase()) {
                     targetBox.style.borderColor = "var(--accent)";
                     targetBox.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.4)";
                     targetBox.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
@@ -807,7 +811,7 @@
                         currentTarget = null;
                     }
                 } else {
-                    if (pred && pred !== "-" && pred.toUpperCase() !== "NO HAND DETECTED") {
+                    if (displayPred && displayPred !== "-" && displayPred.toUpperCase() !== "NO HAND DETECTED") {
                         targetBox.style.borderColor = "var(--danger)";
                         targetBox.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.4)";
                         targetBox.style.backgroundColor = "rgba(239, 68, 68, 0.1)";

@@ -266,26 +266,6 @@
             transition: all 0.2s ease;
         }
 
-        .dyn-pill {
-            margin-top: 1rem;
-            padding: 0.5rem 1.5rem;
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid var(--accent);
-            border-radius: 50px;
-            color: var(--accent);
-            font-weight: 700;
-            font-size: 1.2rem;
-            box-shadow: 0 0 20px var(--accent-glow);
-            animation: pulse-border 2s infinite;
-            display: none;
-        }
-
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
         /* Confidence Bars */
         .confidence-list {
             width: 100%;
@@ -619,7 +599,6 @@
             <div class="prediction-panel glass-panel">
                 <span class="pred-label">Live Inference</span>
                 <div class="pred-value" id="prediction">-</div>
-                <div class="dyn-pill" id="dynamic-prediction"></div>
 
                 <div class="confidence-list" id="confidence-bars">
                     <p style="text-align:center; color:rgba(255,255,255,0.3); font-size: 0.85rem;">Awaiting visual
@@ -646,6 +625,10 @@
                             Tutorial
                         </div>
                     </div>
+                </div>
+                
+                <div id="mode-info" style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                    Currently in <strong>Spelling</strong> Mode. Switch to <strong>Words</strong> to recognize full signs.
                 </div>
 
                 <div class="practice-input-group">
@@ -823,6 +806,7 @@
         }
         
         window.addEventListener('DOMContentLoaded', () => {
+            loadSystemLabels();
             loadMyRequests();
             loadRecentRequests();
         });
@@ -941,22 +925,54 @@
 
         // Load charts on init
         setTimeout(fetchDashboardStats, 500);
-        let practiceWord = '';
-        let currentLetterIndex = 0;
+        let practiceSequence = [];
+        let currentSequenceIndex = 0;
         let practiceActive = false;
         let matchedCount = 0;
         const MATCH_THRESHOLD = 3;
+        let awaitingReset = false;
 
-        const labels = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+
+        let availableSystemLabels = [];
+        
+        async function loadSystemLabels() {
+            const mode = document.getElementById('mode-selector').value;
+            try {
+                const res = await fetch(`/get_labels?mode=${mode}`);
+                const data = await res.json();
+                if(data.labels) {
+                    availableSystemLabels = data.labels;
+                }
+            } catch(e) {}
+        }
+
+        const labelsOrig = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)); // legacy
 
         async function addWord() {
             const input = document.getElementById('practice-input');
             const word = input.value.trim().toUpperCase();
 
-            if (!word) { alert('Please enter a word.'); return; }
-            if (!word.split('').every(l => labels.includes(l))) {
-                alert('Invalid characters. Use A-Z only.'); return;
+            if (!word) { alert('Please enter a word or phrase.'); return; }
+
+            const mode = document.getElementById('mode-selector').value;
+            let sequence = [];
+            
+            if (mode === 'spelling') {
+                sequence = word.replace(/\s+/g, '').split(''); // strip spaces
+            } else {
+                sequence = word.split(/\s+/); // split by space for multiple words
             }
+
+            // Cross-check against global labels
+            for(let i=0; i < sequence.length; i++) {
+                if(!availableSystemLabels.includes(sequence[i])) {
+                    setStatus("This word is not in the system yet, but you can place a suggestion to add it!", "error");
+                    document.getElementById('practice-status').style.color = '#ef4444';
+                    return;
+                }
+            }
+            
+            document.getElementById('practice-status').style.color = ''; // reset
 
             try {
                 const response = await fetch('/set_practice_word', {
@@ -966,8 +982,10 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    practiceWord = word; currentLetterIndex = 0; matchedCount = 0;
-                    renderLetterTiles();
+                    practiceSequence = sequence; 
+                    currentSequenceIndex = 0; 
+                    matchedCount = 0;
+                    renderSequenceTiles();
                     document.getElementById('start-btn').disabled = false;
                     setStatus('Sequence locked. Awaiting initialization.', '');
                 }
@@ -975,15 +993,16 @@
         }
 
         async function startPractice() {
-            if (!practiceWord) return;
+            if (practiceSequence.length === 0) return;
             try {
                 const response = await fetch('/start_practice', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
                 const data = await response.json();
                 if (data.success) {
-                    practiceActive = true; currentLetterIndex = 0; matchedCount = 0;
-                    renderLetterTiles();
+                    practiceActive = true; currentSequenceIndex = 0; matchedCount = 0;
+                    awaitingReset = true;
+                    renderSequenceTiles();
                     document.getElementById('start-btn').disabled = true;
-                    setStatus(`Target acquisition: [ ${practiceWord[currentLetterIndex]} ]`, 'active');
+                    setStatus(`Awaiting Hand Pose Reset... Please lower your hands.`, 'active');
                 }
             } catch (error) { console.error(error); }
         }
@@ -1004,11 +1023,21 @@
                     activeModelMode = data.mode;
                     document.getElementById('mode-selector').value = activeModelMode;
 
+                    if (activeModelMode === 'spelling') {
+                        document.getElementById('mode-info').innerHTML = 'Currently in <strong>Spelling</strong> Mode. Switch to <strong>Words</strong> to recognize full signs.';
+                    } else {
+                        document.getElementById('mode-info').innerHTML = 'Currently in <strong>Words</strong> Mode. Switch to <strong>Spelling</strong> to spell letter by letter.';
+                    }
+
+                    await loadSystemLabels();
+
                     // Reset existing practice when mode switches
                     await fetch('/reset_practice', { method: 'POST' });
                     document.getElementById('practice-input').value = "";
-                    document.getElementById('letter-tiles').innerHTML = "";
-                    practiceWord = "";
+                    document.getElementById('letter-tiles').innerHTML = '<span style="color: rgba(255,255,255,0.3); font-size: 0.85rem;">Sequence preview</span>';
+                    practiceSequence = [];
+                    document.getElementById('practice-status').style.color = '';
+                    setStatus('System Standby', '');
                 } else {
                     console.error("Failed to switch mode :", data.error);
                 }
@@ -1020,7 +1049,7 @@
         async function resetPractice() {
             try {
                 await fetch('/reset_practice', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                practiceWord = ''; practiceActive = false;
+                practiceSequence = []; practiceActive = false;
                 document.getElementById('practice-input').value = '';
                 document.getElementById('letter-tiles').innerHTML = '<span style="color: rgba(255,255,255,0.3); font-size: 0.85rem;">Sequence preview</span>';
                 document.getElementById('start-btn').disabled = true;
@@ -1028,14 +1057,14 @@
             } catch (error) { console.error(error); }
         }
 
-        function renderLetterTiles() {
+        function renderSequenceTiles() {
             const container = document.getElementById('letter-tiles');
-            if (!practiceWord) return;
-            container.innerHTML = practiceWord.split('').map((letter, i) => {
+            if (practiceSequence.length === 0) return;
+            container.innerHTML = practiceSequence.map((item, i) => {
                 let cls = 'seq-char';
-                if (i < currentLetterIndex) cls += ' done';
-                else if (i === currentLetterIndex && practiceActive) cls += ' active';
-                return `<div class="${cls}">${letter}</div>`;
+                if (i < currentSequenceIndex) cls += ' done';
+                else if (i === currentSequenceIndex && practiceActive) cls += ' active';
+                return `<div class="${cls}" style="${item.length > 1 ? 'width: auto; padding: 0 10px;' : ''}">${item}</div>`;
             }).join('');
         }
 
@@ -1045,15 +1074,15 @@
             el.className = 'status-msg ' + className;
         }
 
-        async function advanceToNextLetter() {
-            if (currentLetterIndex < practiceWord.length - 1) {
-                currentLetterIndex++; matchedCount = 0;
+        async function advanceToNextSequence() {
+            if (currentSequenceIndex < practiceSequence.length - 1) {
+                currentSequenceIndex++; matchedCount = 0;
                 await fetch('/advance_letter', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                renderLetterTiles();
-                setStatus(`Target acquisition: [ ${practiceWord[currentLetterIndex]} ]`, 'active');
+                renderSequenceTiles();
+                setStatus(`Target acquisition: [ ${practiceSequence[currentSequenceIndex]} ]`, 'active');
             } else {
-                practiceActive = false; currentLetterIndex++;
-                renderLetterTiles();
+                practiceActive = false; currentSequenceIndex++;
+                renderSequenceTiles();
                 setStatus('Sequence Complete.', 'success');
                 document.getElementById('start-btn').disabled = false;
             }
@@ -1064,18 +1093,28 @@
                 const response = await fetch('/get_prediction');
                 const data = await response.json();
 
-                document.getElementById('prediction').textContent = data.prediction || '-';
+                let statPred = data.prediction && data.prediction !== '-' && data.prediction !== 'Waiting...' ? data.prediction : "";
+                let dynPred = data.dynamic_prediction && data.dynamic_prediction.trim() !== '' ? data.dynamic_prediction : "";
+                let currentPred = "-";
                 
-                const dynEl = document.getElementById('dynamic-prediction');
-                if (data.dynamic_prediction && data.dynamic_prediction.trim() !== '') {
-                    dynEl.style.display = 'block';
-                    dynEl.textContent = data.dynamic_prediction;
+                if (statPred && dynPred) {
+                    currentPred = statPred + " / " + dynPred;
+                } else if (dynPred) {
+                    currentPred = dynPred;
+                } else if (statPred) {
+                    currentPred = statPred;
+                }
+                
+                const predEl = document.getElementById('prediction');
+                predEl.textContent = currentPred;
+                if (currentPred.length > 4) {
+                    predEl.style.fontSize = '3.5rem';
                 } else {
-                    dynEl.style.display = 'none';
+                    predEl.style.fontSize = '6rem';
                 }
 
                 if (data.confidence && data.confidence.length > 0) {
-                    const topConf = labels.map((label, idx) => ({ label, conf: data.confidence[idx] || 0 }))
+                    const topConf = labelsOrig.map((label, idx) => ({ label, conf: data.confidence[idx] || 0 }))
                         .sort((a, b) => b.conf - a.conf).slice(0, 3);
 
                     document.getElementById('confidence-bars').innerHTML = topConf.map(item => {
@@ -1088,10 +1127,21 @@
                     }).join('');
                 }
 
-                if (practiceActive && data.prediction === practiceWord[currentLetterIndex]) {
-                    matchedCount++;
-                    if (matchedCount >= MATCH_THRESHOLD) await advanceToNextLetter();
-                } else { matchedCount = 0; }
+                if (practiceActive) {
+                    const target = practiceSequence[currentSequenceIndex];
+                    
+                    if (awaitingReset) {
+                        if (!currentPred || currentPred === '-' || currentPred === 'Waiting...' || currentPred === 'Ready. Show sign to begin.') {
+                            awaitingReset = false;
+                            setStatus(`Target acquisition: [ ${practiceSequence[currentSequenceIndex]} ]`, 'active');
+                        }
+                    } else {
+                        if (currentPred === target) {
+                            matchedCount++;
+                            if (matchedCount >= MATCH_THRESHOLD) await advanceToNextSequence();
+                        } else { matchedCount = 0; }
+                    }
+                }
             } catch (error) { }
         }, 300);
 
