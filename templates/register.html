@@ -1,346 +1,125 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Bridge Sign</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Register | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-main);
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Animated Background Orbs */
-        .bg-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            animation: float 20s infinite ease-in-out;
-            opacity: 0.6;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -10%;
-            left: -10%;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: #2563eb;
-            bottom: -20%;
-            right: -10%;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-        }
-
-        .auth-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: var(--glass-shadow);
-            width: 100%;
-            max-width: 420px;
-            padding: 3rem 2.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            position: relative;
-            z-index: 10;
-            max-height: 95vh;
-            overflow-y: auto;
-        }
-
-        /* Scrollbar for auth card */
-        .auth-card::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .auth-card::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .auth-card::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
-
-        .auth-header {
-            text-align: center;
-        }
-
-        .auth-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        .auth-header p {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.95rem;
-        }
-
-        .alert {
-            padding: 0.8rem 1rem;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-        }
-
-        .alert-success {
-            color: #34d399;
-            border-color: rgba(52, 211, 153, 0.3);
-        }
-
-        .alert-error {
-            color: #f87171;
-            border-color: rgba(248, 113, 113, 0.3);
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-
-        .form-group label {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.9);
-            padding-left: 0.2rem;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .form-input {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.9rem 1.2rem;
-            border-radius: 12px;
-            color: #fff;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-
-        .form-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            background: rgba(0, 0, 0, 0.3);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 1.2rem;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .toggle-password:hover {
-            color: #fff;
-        }
-
-        .hint {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.4);
-            padding-left: 0.2rem;
-        }
-
-        .btn-submit {
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            padding: 1rem;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 0.8rem;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .btn-submit:hover {
-            background: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
-        }
-
-        .auth-footer {
-            text-align: center;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 1rem;
-        }
-
-        .auth-footer a {
-            color: #a78bfa;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
-        }
-
-        .auth-footer a:hover {
-            color: #c4b5fd;
-            text-decoration: underline;
+        .auth-card-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
+<body class="bg-background text-on-surface flex items-center justify-center min-h-screen p-6 relative overflow-hidden">
+    <!-- Background Decor -->
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full z-0"></div>
 
-<body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-
-    <div class="auth-card">
-        <div class="auth-header">
-            <h1>Create Account</h1>
-            <p>Join the future of learning</p>
+    <div class="w-full max-w-md relative z-10 py-10">
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 mb-4">
+                <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <span class="material-symbols-outlined text-white text-3xl">person_add</span>
+                </div>
+                <span class="text-3xl font-black text-white tracking-tighter">Bridge Sign</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white">Create Account</h1>
+            <p class="text-slate-400 mt-2">Join our community and start learning today.</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
+        <div class="mb-6 p-4 rounded-2xl border {{ 'bg-green-500/10 border-green-500/20 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/20 text-red-400' }}">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-sm">{{ 'check_circle' if category == 'success' else 'error' }}</span>
+                <span class="font-bold text-xs">{{ message }}</span>
+            </div>
+        </div>
         {% endfor %}
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('register') }}"
-            style="display: flex; flex-direction: column; gap: 1.2rem;">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" class="form-input" placeholder="Choose a username"
-                    minlength="3" required autofocus>
-                <div class="hint">Min 3 characters</div>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <div class="input-wrapper">
-                    <input type="password" id="password" name="password" class="form-input"
-                        placeholder="Create password" minlength="6" required>
-                    <button type="button" class="toggle-password" onclick="togglePassword('password')">Show</button>
+        <div class="surface_glass rounded-3xl p-8 glow-indigo border border-white/10 auth-card-scroll max-h-[75vh] overflow-y-auto">
+            <form method="POST" action="{{ url_for('register') }}" class="space-y-6">
+                <div class="space-y-2">
+                    <label for="username" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">person</span>
+                        <input type="text" id="username" name="username" required autofocus minlength="3" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Choose a username">
+                    </div>
                 </div>
-                <div class="hint">Min 6 characters</div>
-            </div>
 
-            <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
-                <div class="input-wrapper">
-                    <input type="password" id="confirm_password" name="confirm_password" class="form-input"
-                        placeholder="Verify password" minlength="6" required>
-                    <button type="button" class="toggle-password"
-                        onclick="togglePassword('confirm_password')">Show</button>
+                <div class="space-y-2">
+                    <label for="password" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Password</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">lock</span>
+                        <input type="password" id="password" name="password" required minlength="6" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Create password">
+                    </div>
                 </div>
+
+                <div class="space-y-2">
+                    <label for="confirm_password" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Confirm Password</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">lock_reset</span>
+                        <input type="password" id="confirm_password" name="confirm_password" required minlength="6" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Repeat password">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-white/10 space-y-6">
+                    <div class="space-y-2">
+                        <label for="security_question" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Security Question</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">help</span>
+                            <select id="security_question" name="security_question" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none">
+                                <option value="" disabled selected>Select a question</option>
+                                <option value="What was your first pet's name?">What was your first pet's name?</option>
+                                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                                <option value="What was the name of your first school?">What was the name of your first school?</option>
+                                <option value="In what city were you born?">In what city were you born?</option>
+                                <option value="What is your favorite book?">What is your favorite book?</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="security_answer" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Security Answer</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">verified_user</span>
+                            <input type="text" id="security_answer" name="security_answer" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Your answer">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
+                    Register
+                    <span class="material-symbols-outlined text-xl">person_add</span>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-8 border-t border-white/5 text-center">
+                <p class="text-sm text-slate-500">
+                    Already have an account? 
+                    <a href="{{ url_for('login') }}" class="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">Sign In</a>
+                </p>
             </div>
+        </div>
 
-            <div class="form-group">
-                <label for="security_question">Security Question</label>
-                <select id="security_question" name="security_question" class="form-input" required>
-                    <option value="" disabled selected>Select a security question</option>
-                    <option value="What was your first pet's name?">What was your first pet's name?</option>
-                    <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-                    <option value="What was the name of your first school?">What was the name of your first school?</option>
-                    <option value="In what city were you born?">In what city were you born?</option>
-                    <option value="What is your favorite book?">What is your favorite book?</option>
-                </select>
-                <div class="hint">Used for password recovery</div>
-            </div>
-
-            <div class="form-group">
-                <label for="security_answer">Security Answer</label>
-                <input type="text" id="security_answer" name="security_answer" class="form-input" 
-                    placeholder="Your answer" required>
-            </div>
-
-            <button type="submit" class="btn-submit">Register</button>
-        </form>
-
-        <div class="auth-footer">
-            Already have an account? <a href="{{ url_for('login') }}">Sign In</a>
+        <div class="mt-8 text-center">
+            <p class="text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em]">© 2026 Bridge Sign by Nur Alya Batrisyia</p>
         </div>
     </div>
 
     <script>
-        function togglePassword(fieldId) {
-            const pwd = document.getElementById(fieldId);
-            const btn = event.target;
-            if (pwd.type === 'password') {
-                pwd.type = 'text';
-                btn.textContent = 'Hide';
-            } else {
-                pwd.type = 'password';
-                btn.textContent = 'Show';
-            }
-        }
-
         document.querySelector('form').addEventListener('submit', function (e) {
             const pwd = document.getElementById('password').value;
             const confirm = document.getElementById('confirm_password').value;
@@ -351,5 +130,4 @@
         });
     </script>
 </body>
-
 </html>

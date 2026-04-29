@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#40000d",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#4edea3",
+                    "on-primary-container": "#dad7ff",
+                    "surface-variant": "#35333e",
+                    "surface-tint": "#c3c0ff",
+                    "on-primary-fixed": "#0f0069",
+                    "surface-container-low": "#1c1a24",
+                    "on-primary-fixed-variant": "#3323cc",
+                    "tertiary-container": "#bf0f3c",
+                    "inverse-on-surface": "#312f39",
+                    "surface-container": "#201e28",
+                    "error": "#ffb4ab",
+                    "surface-container-highest": "#35333e",
+                    "outline": "#918fa1",
+                    "on-tertiary-container": "#ffd0d2",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "background": "#13121b",
+                    "on-secondary-container": "#00311f",
+                    "primary-fixed": "#e2dfff",
+                    "tertiary-fixed": "#ffdadb",
+                    "secondary": "#4edea3",
+                    "primary-fixed-dim": "#c3c0ff",
+                    "on-background": "#e5e0ee",
+                    "on-surface": "#e5e0ee",
+                    "on-secondary": "#003824",
+                    "tertiary-fixed-dim": "#ffb2b7",
+                    "on-primary": "#1d00a5",
+                    "surface-bright": "#3a3842",
+                    "primary-container": "#4f46e5",
+                    "tertiary": "#ffb2b7",
+                    "secondary-fixed": "#6ffbbe",
+                    "surface-container-lowest": "#0e0d16",
+                    "on-secondary-fixed": "#002113",
+                    "on-surface-variant": "#c7c4d8",
+                    "surface-container-high": "#2a2933",
+                    "surface-dim": "#13121b",
+                    "secondary-container": "#00a572",
+                    "inverse-surface": "#e5e0ee",
+                    "primary": "#c3c0ff",
+                    "on-tertiary-fixed-variant": "#92002a",
+                    "on-secondary-fixed-variant": "#005236",
+                    "surface": "#13121b",
+                    "on-tertiary": "#67001b",
+                    "outline-variant": "#464555",
+                    "inverse-primary": "#4d44e3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "panel-padding": "24px",
+                    "unit": "4px",
+                    "margin": "32px"
+            },
+            "fontFamily": {
+                    "telemetry-mono": ["Inter"],
+                    "data-point": ["Inter"],
+                    "headline-md": ["Space Grotesk"],
+                    "display-lg": ["Space Grotesk"],
+                    "label-caps": ["Inter"],
+                    "body-main": ["Inter"]
+            },
+            "fontSize": {
+                    "telemetry-mono": ["13px", {"lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "data-point": ["18px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "600"}],
+                    "body-main": ["16px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #13121b; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(32, 30, 40, 0.4);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(195, 192, 255, 0.1);
+            box-shadow: inset 0 0 20px rgba(79, 70, 229, 0.05);
+        }
+        .corner-bracket {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-color: #c3c0ff;
+        }
+        .bracket-tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+        .bracket-tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+        .bracket-bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+        .bracket-br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+        
+        .piped-bar span {
+            display: inline-block;
+            width: 4px;
+            height: 12px;
+            margin-right: 2px;
+            background: #4edea3;
+        }
+        .piped-bar span.inactive {
+            background: rgba(78, 222, 163, 0.2);
+        }
+    </style>
+<title>Bridge Sign</title>
+</head>
+<body class="font-body-main text-on-surface selection:bg-primary-container selection:text-white">
+<!-- Background Orbs -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+<div class="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px]"></div>
+<div class="absolute top-1/2 -right-1/4 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px]"></div>
+<div class="absolute -bottom-1/4 left-1/2 w-[700px] h-[700px] bg-indigo-900/30 rounded-full blur-[140px]"></div>
+</div>
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-slate-950/60 backdrop-blur-[24px] border-b border-indigo-500/20 shadow-2xl h-20 flex justify-between items-center px-8">
+<div class="flex items-center gap-12">
+<span class="text-2xl font-bold text-indigo-400 drop-shadow-[0_0_8px_rgba(79,70,229,0.5)] font-['Space_Grotesk'] tracking-tight">Bridge Sign</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:bg-indigo-500/10 p-2 rounded-full transition-all">settings</span>
+</div>
+<button onclick="window.location.href='{{ url_for('login') }}'" class="bg-primary-container hover:bg-primary-container/80 text-on-primary-container px-6 py-2 rounded-sm font-['Space_Grotesk'] font-bold tracking-tight scale-95 active:scale-90 transition-all shadow-[0_0_15px_rgba(79,70,229,0.4)]">
+                Initialize System
+            </button>
+</div>
+</nav>
+<main class="relative z-10 pt-32 pb-24 px-margin max-w-7xl mx-auto min-h-screen flex flex-col">
+<!-- Hero Section -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter items-center mb-24">
+<div class="md:col-span-6 space-y-8">
+<div class="inline-flex items-center gap-3 px-3 py-1 glass-panel rounded-full border border-primary/20">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse shadow-[0_0_8px_#4edea3]"></span>
+<span class="font-label-caps text-label-caps text-secondary">SYSTEM ONLINE</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-white leading-tight">
+                    Bridge the <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-indigo-400 drop-shadow-[0_0_10px_rgba(195,192,255,0.3)]">Gap</span>
+</h1>
+<p class="font-body-main text-body-main text-on-surface-variant max-w-lg leading-relaxed">
+                    Access the command deck of human communication. Our neural network processes sign language gestures into real-time spoken telemetry with sub-millisecond precision.
+                </p>
+<div class="flex items-center gap-6 pt-4">
+<button onclick="window.location.href='{{ url_for('login') }}'" class="group flex items-center gap-4 bg-indigo-600/20 border border-indigo-500/50 hover:bg-indigo-500/40 hover:shadow-[0_0_30px_rgba(79,70,229,0.4)] px-8 py-4 rounded-sm transition-all duration-300">
+<span class="font-headline-md text-headline-md text-white">GET STARTED</span>
+<span class="material-symbols-outlined text-white transition-transform group-hover:translate-x-1">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="md:col-span-6 relative aspect-square flex items-center justify-center">
+<div class="absolute inset-0 bg-indigo-500/5 rounded-full blur-[100px]"></div>
+<!-- Visual Asset Placeholder -->
+<div class="relative w-full h-full flex items-center justify-center glass-panel rounded-full border border-indigo-500/10">
+<div class="bracket-tl corner-bracket"></div>
+<div class="bracket-tr corner-bracket"></div>
+<div class="bracket-bl corner-bracket"></div>
+<div class="bracket-br corner-bracket"></div>
+<img alt="Neural Interface Graphic" class="w-4/5 h-4/5 object-contain mix-blend-screen opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPm-gUtN_jt1WWikIpSVBhfenSr0L4ce_Zn7JLt7cSjMbugF0w3KLdBS4hxRBvU3bGToiez8TcL53f5bsrsrrpaPeMok8SfXuKP_TBxUUYtnCpGdeSWmBd4ObpULDpYhhUwHsFy3-Tw-UDqVU8bu2xzG-8lv43t8R_CkFEqal7CHA9bjy6CT4dx6wK5zsKoa5FZXz-r6Ap1rsWEh-9FVo-fzNNh40wt90de7ipkFi_FVZ4cNeSthO7DZKx0YCzZv656YpPZVzN818"/>
+<!-- HUD Overlays -->
+<div class="absolute top-12 right-12 text-right">
+<div class="font-label-caps text-label-caps text-primary mb-1">AXIS_X</div>
+<div class="w-24 h-px bg-primary/30"></div>
+</div>
+<div class="absolute bottom-12 left-12">
+<div class="font-label-caps text-label-caps text-secondary mb-1">FREQ_HZ</div>
+<div class="w-24 h-px bg-secondary/30"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Core Systems Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Feature 1 -->
+<div class="glass-panel p-panel-padding relative group hover:border-primary/50 transition-colors">
+<div class="bracket-tl corner-bracket opacity-50"></div>
+<div class="mb-6 flex items-start justify-between">
+<div class="bg-primary/10 p-3 rounded-sm border border-primary/20">
+<span class="material-symbols-outlined text-primary text-3xl">bolt</span>
+</div>
+<span class="font-telemetry-mono text-telemetry-mono text-outline">SEC_01</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-white mb-4">Real-time Detection</h3>
+<p class="font-body-main text-on-surface-variant text-sm mb-6">
+                    Sub-millisecond latency ensures communication flows at the speed of thought, capturing every nuance.
+                </p>
+<div class="piped-bar">
+<span></span><span></span><span></span><span></span><span class="inactive"></span>
+</div>
+</div>
+<!-- Feature 2 -->
+<div class="glass-panel p-panel-padding relative group hover:border-secondary/50 transition-colors">
+<div class="bracket-tl corner-bracket opacity-50"></div>
+<div class="mb-6 flex items-start justify-between">
+<div class="bg-secondary/10 p-3 rounded-sm border border-secondary/20">
+<span class="material-symbols-outlined text-secondary text-3xl">gesture</span>
+</div>
+<span class="font-telemetry-mono text-telemetry-mono text-outline">SEC_02</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-white mb-4">Dynamic Gestures</h3>
+<p class="font-body-main text-on-surface-variant text-sm mb-6">
+                    Advanced spatial mapping recognizes complex movement patterns and multi-dimensional sign variables.
+                </p>
+<div class="piped-bar">
+<span></span><span></span><span></span><span></span><span></span>
+</div>
+</div>
+<!-- Feature 3 -->
+<div class="glass-panel p-panel-padding relative group hover:border-primary/50 transition-colors">
+<div class="bracket-tl corner-bracket opacity-50"></div>
+<div class="mb-6 flex items-start justify-between">
+<div class="bg-primary/10 p-3 rounded-sm border border-primary/20">
+<span class="material-symbols-outlined text-primary text-3xl">menu_book</span>
+</div>
+<span class="font-telemetry-mono text-telemetry-mono text-outline">SEC_03</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-white mb-4">Custom Lexicon</h3>
+<p class="font-body-main text-on-surface-variant text-sm mb-6">
+                    Train the system on your personal signs and regional dialects for a truly customized interface.
+                </p>
+<div class="piped-bar">
+<span></span><span></span><span></span><span class="inactive"></span><span class="inactive"></span>
+</div>
+</div>
+</section>
+</main>
+<!-- System Status Bar -->
+<footer class="fixed bottom-0 w-full z-40 bg-slate-950 border-t border-indigo-900/50 hidden md:block">
+<div class="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary shadow-[0_0_10px_#4edea3]"></span>
+<span class="font-telemetry-mono text-telemetry-mono text-secondary">SYSTEM READY</span>
+</div>
+<div class="h-4 w-px bg-indigo-500/30"></div>
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps text-outline">POWER:</span>
+<span class="font-telemetry-mono text-telemetry-mono text-white">100%</span>
+</div>
+<div class="h-4 w-px bg-indigo-500/30"></div>
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps text-outline">ENCRYPTION:</span>
+<span class="font-telemetry-mono text-telemetry-mono text-white">AES-512</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<span class="font-telemetry-mono text-[10px] text-indigo-500/60 uppercase tracking-widest">© 2026 Bridge Sign by Nur Alya Batrisyia</span>
+</div>
+</div>
+</footer>
+</body></html>

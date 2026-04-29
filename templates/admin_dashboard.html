@@ -1,488 +1,371 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html class="dark" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Bridge Sign</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Admin Dashboard | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc;
-            --text-muted: #cbd5e1;
-            --danger: #ef4444;
-            --success: #10b981;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            animation: float 20s infinite ease-in-out;
-            opacity: 0.5;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -100px;
-            left: -100px;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: #2563eb;
-            bottom: -200px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-        }
-
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            margin: 1.5rem;
-            z-index: 10;
-        
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .navbar-menu {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .navbar-item {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        
-        white-space: nowrap;}
-
-        .navbar-item:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .navbar-item.active {
-            color: #fff;
-            background: rgba(79, 70, 229, 0.3);
-            border: 1px solid rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fff;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 2rem auto;
-            width: calc(100% - 3rem);
-            padding: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .header h1 {
-            font-size: 2.2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .header p {
-            color: var(--text-muted);
-        }
-
-        .alert {
-            padding: 1rem 1.2rem;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 1rem;
-        }
-
-        .alert-success {
-            color: #34d399;
-            border-color: rgba(52, 211, 153, 0.3);
-        }
-
-        .alert-error {
-            color: #f87171;
-            border-color: rgba(248, 113, 113, 0.3);
-        }
-
-        .admin-card {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 2rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 2rem;
-        }
-
-        .admin-card h2 {
-            font-size: 1.4rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .admin-card p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .form-grid {
-            display: grid;
-            gap: 1.5rem;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        label {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-muted);
-        }
-
-        input[type="file"],
-        select {
-            padding: 0.8rem 1rem;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            color: #fff;
-            font-family: inherit;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        input[type="file"]::file-selector-button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-right: 1rem;
-            font-weight: 500;
-        }
-
-        select option {
-            background: #1e1b4b;
-            color: #fff;
-        }
-
-        .btn-action {
-            margin-top: 1rem;
-            padding: 0.8rem 1.5rem;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.4);
-        }
-
-        .btn-danger:hover {
-            background: var(--danger);
-            color: #fff;
-            transform: translateY(-2px);
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
+<body class="bg-background text-on-surface">
+    {% include '_navbar.html' %}
+    {% include '_sidebar.html' %}
 
-<body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-
-        {% include '_navbar.html' %}<div class="container glass-panel">
-        <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h1>Admin Dashboard</h1>
-                <p>Manage users, review requests, and configure the dictionary.</p>
-            </div>
-            <div>
-                <a href="{{ url_for('admin_dictionary') }}" style="text-decoration: none; padding: 0.8rem 1.5rem; border-radius: 8px; display: inline-block; background: #6366f1; color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">
-                    📖 Manage Dictionary
-                </a>
-            </div>
+    <!-- Main Content -->
+    <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1280px] transition-all duration-300">
+        <div class="mb-10">
+            <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">Admin Dashboard</h1>
+            <p class="text-lg text-slate-400">Manage platform users, monitor system health, and review sign vocabulary requests.</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-        {% endif %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-6 p-4 rounded-2xl border {% if category == 'success' %}bg-green-500/10 border-green-500/20 text-green-400{% else %}bg-red-500/10 border-red-500/20 text-red-400{% endif %} flex items-center gap-3">
+                        <span class="material-symbols-outlined">{% if category == 'success' %}check_circle{% else %}error{% endif %}</span>
+                        <span class="font-bold text-xs">{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
         {% endwith %}
 
-        
-        <div class="admin-card">
-            <h2>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                Manage Users
-            </h2>
-            <p>Add new accounts or modify privileges of existing ones. The main Admin account cannot be deleted or
-                demoted.</p>
-
-            <form method="POST" class="add-user-form"
-                style="margin-bottom: 2rem; background: rgba(0,0,0,0.1); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                <input type="hidden" name="action" value="add_user">
-                <div class="form-grid" style="align-items: end;">
-                    <div class="form-group">
-                        <label for="new_username">Username</label>
-                        <input type="text" id="new_username" name="new_username" class="form-input" minlength="3"
-                            required placeholder="New user">
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Quick Stats Bento -->
+            <div class="col-span-12 md:col-span-4 surface_glass rounded-3xl p-6 glow-indigo flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-indigo-500/20 rounded-2xl">
+                            <span class="material-symbols-outlined text-indigo-400">group</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest px-2 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">Active</span>
                     </div>
-                    <div class="form-group">
-                        <label for="new_password">Password</label>
-                        <input type="password" id="new_password" name="new_password" class="form-input" minlength="6"
-                            required placeholder="Min 6 chars">
-                    </div>
-                    <div class="form-group"
-                        style="flex-direction: row; align-items: center; gap: 0.5rem; height: 100%; padding-bottom: 0.5rem;">
-                        <input type="checkbox" id="is_admin" name="is_admin" style="width: auto;">
-                        <label for="is_admin" style="margin: 0; cursor: pointer;">Admin Access</label>
-                    </div>
-                    <button type="submit" class="btn-action btn-primary" style="margin: 0;">Add User</button>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Users</p>
+                    <h3 class="text-4xl font-black text-white mt-1">{{ users | length }}</h3>
                 </div>
-            </form>
-
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
-                    <thead>
-                        <tr
-                            style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); text-align: left;">
-                            <th style="padding: 1rem 0.5rem; font-weight: 500;">ID</th>
-                            <th style="padding: 1rem 0.5rem; font-weight: 500;">Username</th>
-                            <th style="padding: 1rem 0.5rem; font-weight: 500;">Role</th>
-                            <th style="padding: 1rem 0.5rem; font-weight: 500; text-align: right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for u in users %}
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <td style="padding: 1rem 0.5rem; color: var(--text-muted);">#{{ u.id }}</td>
-                            <td style="padding: 1rem 0.5rem; font-weight: 500;">{{ u.username }}</td>
-                            <td style="padding: 1rem 0.5rem;">
-                                {% if u.is_admin %}
-                                <span
-                                    style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">Admin</span>
-                                {% else %}
-                                <span
-                                    style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.8rem;">User</span>
-                                {% endif %}
-                            </td>
-                            <td style="padding: 1rem 0.5rem; text-align: right;">
-                                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                                    {% if u.username != 'Admin' and u.id != session.get('user_id') %}
-                                    <form method="POST" style="margin: 0;">
-                                        <input type="hidden" name="action" value="toggle_admin">
-                                        <input type="hidden" name="user_id" value="{{ u.id }}">
-                                        <button type="submit"
-                                            style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
-                                            {{ 'Demote' if u.is_admin else 'Make Admin' }}
-                                        </button>
-                                    </form>
-                                    <form method="POST" style="margin: 0;"
-                                        onsubmit="return confirm('Are you sure you want to delete user {{ u.username }}?');">
-                                        <input type="hidden" name="action" value="delete_user">
-                                        <input type="hidden" name="user_id" value="{{ u.id }}">
-                                        <button type="submit"
-                                            style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">
-                                            Delete
-                                        </button>
-                                    </form>
-                                    {% else %}
-                                    <span
-                                        style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Protected</span>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="mt-6 pt-4 border-t border-white/5">
+                    <div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-indigo-500 h-full w-full shadow-[0_0_12px_rgba(79,70,229,0.5)]"></div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="admin-card">
-            <h2>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                Pending Word Requests
-            </h2>
-            <p>User feedback requesting new words to be added directly to the app. Mark these as 'Added' when you train them into the model, or 'Reject' them.</p>
+            <div class="col-span-12 md:col-span-4 surface_glass rounded-3xl p-6 glow-indigo flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-purple-500/20 rounded-2xl">
+                            <span class="material-symbols-outlined text-purple-400">translate</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-purple-400 uppercase tracking-widest px-2 py-1 bg-purple-500/10 rounded-full border border-purple-500/20">Loaded</span>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Words in Model</p>
+                    <h3 class="text-4xl font-black text-white mt-1">{{ total_words }}</h3>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white/5">
+                    <div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-purple-500 h-full w-full shadow-[0_0_12px_rgba(168,85,247,0.5)]"></div>
+                    </div>
+                </div>
+            </div>
 
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
-                    <thead>
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); text-align: left;">
-                            <th style="padding: 1rem 0.5rem; font-weight: 500;">Date</th>
-                            <th style="padding: 1rem 0.5rem; font-weight: 500;">User</th>
-                            <th style="padding: 1rem 0.5rem; font-weight: 500;">Word Requested</th>
-                            <th style="padding: 1rem 0.5rem; font-weight: 500; text-align: right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if pending_requests %}
-                            {% for req in pending_requests %}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" id="req-row-{{ req.id }}">
-                                <td style="padding: 1rem 0.5rem; color: var(--text-muted);">{{ req.timestamp.strftime('%Y-%m-%d') }}</td>
-                                <td style="padding: 1rem 0.5rem; font-weight: 500;">{{ req.user.username }}</td>
-                                <td style="padding: 1rem 0.5rem; font-size: 1.1rem; color: #60a5fa;">{{ req.requested_word }}</td>
-                                <td style="padding: 1rem 0.5rem; text-align: right;">
-                                    <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-                                        <button onclick="updateRequest({{ req.id }}, 'Added')" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16,185,129,0.3); color: #34d399; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Mark Added</button>
-                                        <button onclick="updateRequest({{ req.id }}, 'Rejected')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Reject</button>
+            <div class="col-span-12 md:col-span-4 surface_glass rounded-3xl p-6 glow-indigo bg-gradient-to-br from-indigo-900/20 to-transparent flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-14 h-14 rounded-2xl surface_glass flex items-center justify-center border border-white/10">
+                            <span class="material-symbols-outlined text-indigo-400 text-3xl">bolt</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase leading-none tracking-widest">System Load</p>
+                            <h4 id="card-system-status" class="text-white font-black text-xl mt-1">Optimal</h4>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">Recognition nodes operating within nominal latency parameters.</p>
+                </div>
+                <div class="mt-6">
+                    <button onclick="openHealthModal()" class="w-full py-3 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 rounded-2xl text-indigo-300 text-[10px] font-bold uppercase tracking-widest transition-all">View Health Metrics</button>
+                </div>
+            </div>
+
+            <!-- User Management Section -->
+            <div class="col-span-12 lg:col-span-8 surface_glass rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+                <div class="p-8 border-b border-white/5 flex flex-col sm:flex-row justify-between items-center bg-white/2 gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-indigo-400">manage_accounts</span>
+                        </div>
+                        <h3 class="text-2xl font-black text-white tracking-tight">User Management</h3>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
+                        <input class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all" placeholder="Search users..." type="text"/>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-indigo-500/5">
+                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">User Details</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Access Level</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% for u in users %}
+                            <tr class="hover:bg-white/5 transition-colors group">
+                                <td class="px-8 py-5">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
+                                            {{ u.username[0].upper() }}
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-bold text-white">{{ u.username }}</div>
+                                            <div class="text-[10px] text-slate-500 font-mono uppercase">UUID: {{ u.id }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-8 py-5">
+                                    {% if u.is_admin %}
+                                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded-full border border-indigo-500/20">
+                                            <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                            Administrator
+                                        </div>
+                                    {% else %}
+                                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/5 text-slate-500 text-[10px] font-bold uppercase rounded-full border border-white/10">
+                                            <span class="w-1.5 h-1.5 bg-slate-500 rounded-full"></span>
+                                            Standard User
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-8 py-5 text-right">
+                                    <div class="flex justify-end gap-3">
+                                        {% if u.username != 'Admin' and u.id != session.get('user_id') %}
+                                            <form method="POST" class="m-0">
+                                                <input type="hidden" name="action" value="toggle_admin">
+                                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                                <button type="submit" class="p-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10" title="{{ 'Demote to User' if u.is_admin else 'Promote to Admin' }}">
+                                                    <span class="material-symbols-outlined text-xl">{% if u.is_admin %}person_remove{% else %}verified_user{% endif %}</span>
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete user {{ u.username }}?');">
+                                                <input type="hidden" name="action" value="delete_user">
+                                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                                <button type="submit" class="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/10">
+                                                    <span class="material-symbols-outlined text-xl">delete</span>
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic pr-4">Protected</span>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
                             {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic;">No pending requests!</td>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add User Form -->
+            <div class="col-span-12 lg:col-span-4 surface_glass rounded-3xl p-8 glow-indigo border border-white/10 flex flex-col h-full">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <span class="material-symbols-outlined text-white text-2xl">person_add</span>
+                    </div>
+                    <h3 class="text-2xl font-black text-white tracking-tight">Add New User</h3>
+                </div>
+                <form method="POST" class="space-y-6 flex-1 flex flex-col">
+                    <input type="hidden" name="action" value="add_user">
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
+                        <input name="new_username" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all placeholder:text-slate-700" placeholder="Enter username" type="text"/>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Initial Password</label>
+                        <input name="new_password" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all placeholder:text-slate-700" placeholder="Min. 6 characters" type="password"/>
+                    </div>
+                    <div class="flex items-center gap-4 p-4 bg-white/2 rounded-2xl border border-white/5">
+                        <div class="relative flex items-center">
+                            <input type="checkbox" id="is_admin_check" name="is_admin" class="w-5 h-5 rounded-lg border-white/10 bg-indigo-950/40 text-indigo-500 focus:ring-indigo-500 cursor-pointer">
+                        </div>
+                        <label for="is_admin_check" class="text-xs font-bold text-slate-400 uppercase tracking-widest cursor-pointer select-none">Grant Admin Privileges</label>
+                    </div>
+                    <div class="pt-4 mt-auto">
+                        <button class="w-full py-5 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-bold text-sm shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 active:scale-95 transition-all flex items-center justify-center gap-2" type="submit">
+                            Create Account
+                            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Pending Word Requests -->
+            <div class="col-span-12 surface_glass rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+                <div class="p-8 border-b border-white/5 flex items-center gap-4 bg-white/2">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-purple-400">new_releases</span>
+                    </div>
+                    <h3 class="text-2xl font-black text-white tracking-tight">Pending Word Requests</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-purple-500/5">
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">Sign Lexicon</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">Requested By</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">Submission Date</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% if pending_requests %}
+                                {% for req in pending_requests %}
+                                <tr class="hover:bg-white/5 transition-colors group" id="req-row-{{ req.id }}">
+                                    <td class="px-8 py-5">
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+                                            <span class="font-black text-white text-lg tracking-tight">{{ req.requested_word }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-5">
+                                        <span class="text-sm text-slate-400 italic">@{{ req.user.username }}</span>
+                                    </td>
+                                    <td class="px-8 py-5 text-sm text-slate-500 font-mono">{{ req.timestamp.strftime('%d %b, %Y') }}</td>
+                                    <td class="px-8 py-5 text-right">
+                                        <div class="flex justify-end gap-3">
+                                            <button onclick="updateRequest({{ req.id }}, 'Added')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/10 active:scale-95">Approve</button>
+                                            <button onclick="updateRequest({{ req.id }}, 'Rejected')" class="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5 active:scale-95">Decline</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="px-8 py-16 text-center">
+                                        <span class="material-symbols-outlined text-6xl text-slate-700 mb-4 block">inbox</span>
+                                        <p class="text-slate-500 italic font-medium">No pending requests at this time. All clear!</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recognized Vocabulary List -->
+            <div class="col-span-12 surface_glass rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+                <div class="p-8 border-b border-white/5 flex flex-col sm:flex-row justify-between items-center bg-white/2 gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-indigo-400">visibility</span>
+                        </div>
+                        <h3 class="text-2xl font-black text-white tracking-tight">Recognized Vocabulary (Inference Model)</h3>
+                    </div>
+                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 py-2 bg-white/5 rounded-full border border-white/10">
+                        Total signs: {{ total_words }}
+                    </div>
+                </div>
+                <div class="p-8">
+                    <div class="flex flex-wrap gap-3">
+                        {% for word in words_list %}
+                            <div class="px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-white text-xs font-bold uppercase tracking-wide hover:bg-indigo-500/20 transition-all cursor-default">
+                                {{ word }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Health Metrics Modal -->
+    <div id="health-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity opacity-0">
+        <div class="surface_glass rounded-3xl p-8 glow-indigo border border-indigo-500/30 w-full max-w-lg relative scale-95 transition-transform duration-300" id="health-modal-content">
+            <button onclick="closeHealthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <h3 class="text-2xl font-black text-white tracking-tight mb-6">System Health Detailed Metrics</h3>
+            
+            <div class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Static Model</p>
+                        <div class="flex items-center gap-2">
+                            <span id="modal-static-dot" class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>
+                            <span id="modal-static-status" class="text-sm font-bold text-white">Healthy</span>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Dynamic Model</p>
+                        <div class="flex items-center gap-2">
+                            <span id="modal-dynamic-dot" class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>
+                            <span id="modal-dynamic-status" class="text-sm font-bold text-white">Healthy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-1">Inference Latency</p>
+                        <h4 id="modal-latency" class="text-3xl font-black text-white tracking-tight">14ms</h4>
+                    </div>
+                    <div class="w-24 h-10 flex items-end gap-1 opacity-70">
+                        <!-- Sparkline mock -->
+                        <div class="w-2 bg-indigo-400 h-full rounded-t-sm animate-pulse"></div>
+                        <div class="w-2 bg-indigo-400 h-3/4 rounded-t-sm animate-pulse" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 bg-indigo-400 h-4/5 rounded-t-sm animate-pulse" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 bg-indigo-400 h-1/2 rounded-t-sm animate-pulse" style="animation-delay: 0.3s"></div>
+                        <div class="w-2 bg-indigo-400 h-2/3 rounded-t-sm animate-pulse" style="animation-delay: 0.4s"></div>
+                        <div class="w-2 bg-indigo-400 h-5/6 rounded-t-sm animate-pulse" style="animation-delay: 0.5s"></div>
+                        <div class="w-2 bg-indigo-500 h-full rounded-t-sm animate-pulse" style="animation-delay: 0.6s"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                            <span>CPU Usage</span>
+                            <span id="modal-cpu-text">12%</span>
+                        </div>
+                        <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                            <div id="modal-cpu-bar" class="bg-indigo-500 h-full w-[12%] shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                            <span>Memory Usage</span>
+                            <span id="modal-mem-text">412MB</span>
+                        </div>
+                        <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                            <div id="modal-mem-bar" class="bg-purple-500 h-full w-[40%] shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Active Sessions</p>
+                        <h4 id="modal-sessions" class="text-xl font-bold text-white">4 Streams</h4>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">System Uptime</p>
+                        <h4 id="modal-uptime" class="text-xl font-bold text-white font-mono">142:12:05</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8">
+                <button onclick="closeHealthModal()" class="w-full py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-white font-bold text-sm transition-all border border-white/10 active:scale-95">Close Metrics</button>
             </div>
         </div>
     </div>
-    
+
     <script>
         async function updateRequest(id, status) {
             try {
@@ -496,6 +379,7 @@
                     const row = document.getElementById('req-row-' + id);
                     if(row) {
                         row.style.opacity = '0.5';
+                        row.style.filter = 'blur(4px)';
                         setTimeout(() => row.remove(), 500);
                     }
                 } else {
@@ -505,7 +389,68 @@
                 alert("Error updating request");
             }
         }
+
+        function openHealthModal() {
+            const modal = document.getElementById('health-modal');
+            const content = document.getElementById('health-modal-content');
+            modal.classList.remove('hidden');
+            // small delay for transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+            fetchHealthData();
+        }
+
+        function closeHealthModal() {
+            const modal = document.getElementById('health-modal');
+            const content = document.getElementById('health-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        async function fetchHealthData() {
+            try {
+                const res = await fetch('/admin/system_health');
+                const data = await res.json();
+                
+                // Update Card Status
+                document.getElementById('card-system-status').textContent = data.status;
+                if(data.status === 'Optimal') document.getElementById('card-system-status').className = "text-white font-black text-xl mt-1";
+                else document.getElementById('card-system-status').className = "text-red-400 font-black text-xl mt-1";
+
+                // Update Modal Values
+                document.getElementById('modal-static-status').textContent = data.static_model;
+                document.getElementById('modal-static-dot').className = data.static_model === 'Healthy' ? "w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" : "w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]";
+                
+                document.getElementById('modal-dynamic-status').textContent = data.dynamic_model;
+                document.getElementById('modal-dynamic-dot').className = data.dynamic_model === 'Healthy' ? "w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]" : "w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]";
+
+                document.getElementById('modal-latency').textContent = data.latency;
+                
+                document.getElementById('modal-cpu-text').textContent = data.cpu_usage;
+                document.getElementById('modal-cpu-bar').style.width = data.cpu_usage;
+                
+                document.getElementById('modal-mem-text').textContent = data.memory_usage;
+                // Rough estimate for bar width, assuming 1024MB is 100%
+                let memVal = parseFloat(data.memory_usage);
+                document.getElementById('modal-mem-bar').style.width = Math.min((memVal / 1024) * 100, 100) + "%";
+                
+                document.getElementById('modal-sessions').textContent = data.active_streams + (data.active_streams === 1 ? " Stream" : " Streams");
+                document.getElementById('modal-uptime').textContent = data.uptime;
+                
+            } catch(e) {
+                console.error("Failed to fetch health data", e);
+            }
+        }
+
+        // Poll every 10 seconds
+        setInterval(fetchHealthData, 10000);
+        // Initial fetch
+        fetchHealthData();
     </script>
 </body>
-
 </html>

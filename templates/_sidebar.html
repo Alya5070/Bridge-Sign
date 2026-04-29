@@ -1,0 +1,135 @@
+<!-- SideNavBar Component -->
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-indigo-950/60 backdrop-blur-lg border-r border-white/10 shadow-2xl z-40 flex flex-col transition-all duration-300 transform lg:translate-x-0 -translate-x-full">
+    <div class="pt-24 px-4 pb-8 flex-1 overflow-y-auto overflow-x-hidden">
+        <div class="flex items-center gap-3 mb-8 px-2">
+            <div class="min-w-[32px] h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+                <span class="material-symbols-outlined text-white text-sm">navigation</span>
+            </div>
+            <div class="sidebar-header-text">
+                <h2 class="text-sm font-bold text-white leading-none">Navigation</h2>
+                <p class="text-[10px] uppercase tracking-widest text-indigo-400 font-semibold mt-1">Main Menu</p>
+            </div>
+        </div>
+        
+        <nav class="space-y-1">
+            <a href="{{ url_for('index') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'index' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Dashboard</span>
+            </a>
+            
+            <a href="{{ url_for('tutorial') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'tutorial' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined">school</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Tutorial</span>
+            </a>
+            
+            <a href="{{ url_for('quiz') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'quiz' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined">quiz</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Quiz</span>
+            </a>
+            
+            <a href="{{ url_for('text_to_sign') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'text_to_sign' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined">translate</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Text-to-Sign</span>
+            </a>
+            
+            <div class="pt-6 pb-2 px-2 sidebar-header-text">
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Account</p>
+            </div>
+            
+            <a href="{{ url_for('profile') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'profile' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined">person</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Profile</span>
+            </a>
+            
+            <a href="{{ url_for('settings') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'settings' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined">settings</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Settings</span>
+            </a>
+
+            {% if is_admin %}
+            <div class="pt-6 pb-2 px-2 sidebar-header-text">
+                <p class="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Admin Portal</p>
+            </div>
+            
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'admin_dashboard' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined text-indigo-400">shield_person</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Admin Overview</span>
+            </a>
+            
+            <a href="{{ url_for('admin_dictionary') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'admin_dictionary' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined text-indigo-400">menu_book</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Dictionary</span>
+            </a>
+            
+            <a href="{{ url_for('trainer') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'trainer' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
+                <span class="material-symbols-outlined text-indigo-400">exercise</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Trainer Module</span>
+            </a>
+            
+            {% endif %}
+        </nav>
+    </div>
+    
+    <div class="p-4 border-t border-white/5 space-y-2">
+        <button onclick="toggleSidebarCollapse()" class="w-full flex items-center gap-3 text-slate-500 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5">
+            <span id="collapse-icon" class="material-symbols-outlined transition-transform duration-300">keyboard_double_arrow_left</span>
+            <span class="sidebar-label text-[10px] uppercase tracking-widest font-bold">Collapse Sidebar</span>
+        </button>
+        <a href="{{ url_for('logout') }}" class="flex items-center gap-3 text-red-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-red-500/10">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="sidebar-label text-[10px] uppercase tracking-widest font-bold">Sign Out</span>
+        </a>
+    </div>
+</aside>
+
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('-translate-x-full');
+    }
+
+    function toggleSidebarCollapse() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const collapseIcon = document.getElementById('collapse-icon');
+        const labels = document.querySelectorAll('.sidebar-label, .sidebar-header-text');
+        
+        const isCollapsed = sidebar.classList.toggle('w-20');
+        sidebar.classList.toggle('w-64');
+        
+        if (mainContent) {
+            mainContent.classList.toggle('lg:ml-20');
+            mainContent.classList.toggle('lg:ml-64');
+        }
+        
+        collapseIcon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        
+        labels.forEach(label => {
+            label.style.display = isCollapsed ? 'none' : 'block';
+        });
+
+        // Persist state
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+    }
+
+    // Initialize state from localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            // Apply collapsed state without animation on load
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const collapseIcon = document.getElementById('collapse-icon');
+            const labels = document.querySelectorAll('.sidebar-label, .sidebar-header-text');
+            
+            sidebar.classList.remove('w-64');
+            sidebar.classList.add('w-20');
+            if (mainContent) {
+                mainContent.classList.remove('lg:ml-64');
+                mainContent.classList.add('lg:ml-20');
+            }
+            if (collapseIcon) collapseIcon.style.transform = 'rotate(180deg)';
+            labels.forEach(label => label.style.display = 'none');
+        }
+    });
+</script>

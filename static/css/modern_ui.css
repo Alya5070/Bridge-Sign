@@ -1,0 +1,72 @@
+/* modern_ui.css - Shared styles for the premium design system */
+
+:root {
+    --sidebar-width: 256px;
+    --sidebar-collapsed-width: 80px;
+    --navbar-height: 80px;
+}
+
+body {
+    background: radial-gradient(circle at top right, #1d00a5 0%, #13121b 50%, #0e0d16 100%);
+    min-height: 100vh;
+    color: #e4e1ee;
+}
+
+.surface_glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow-indigo {
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
+/* Sidebar Transitions */
+#sidebar {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content {
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed State Styles */
+.sidebar-collapsed {
+    width: var(--sidebar-collapsed-width) !important;
+}
+
+.sidebar-collapsed .sidebar-label,
+.sidebar-collapsed .sidebar-header-text {
+    display: none;
+}
+
+.sidebar-collapsed .sidebar-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sidebar-collapsed .sidebar-item span.material-symbols-outlined {
+    margin-right: 0;
+}
+
+.main-content-collapsed {
+    margin-left: var(--sidebar-collapsed-width) !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

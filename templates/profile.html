@@ -1,394 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Bridge Sign</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Profile | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --secondary: #2563eb;
-            --accent: #10b981;
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc;
-            --text-muted: #cbd5e1;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        /* Animated Background Orbs */
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            animation: float 20s infinite ease-in-out;
-            opacity: 0.5;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -100px;
-            left: -100px;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: #2563eb;
-            bottom: -200px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-        }
-
-        /* Glassmorphism Utilities */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* Navigation */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            margin: 1.5rem;
-            z-index: 10;
-        
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .navbar-menu {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .navbar-item {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        
-        white-space: nowrap;}
-
-        .navbar-item:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .navbar-item.active {
-            color: #fff;
-            background: rgba(79, 70, 229, 0.3);
-            border: 1px solid rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1rem;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fff;
-        }
-
-        /* Main Container */
-        .container {
-            max-width: 800px;
-            margin: 2rem auto;
-            width: calc(100% - 3rem);
-            padding: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .header {
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .header p {
-            color: var(--text-muted);
-            font-size: 1rem;
-        }
-
-        .alert {
-            padding: 1rem 1.2rem;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 1rem;
-        }
-
-        .alert-success {
-            color: #34d399;
-            border-color: rgba(52, 211, 153, 0.3);
-        }
-
-        .alert-error {
-            color: #f87171;
-            border-color: rgba(248, 113, 113, 0.3);
-        }
-
-        .profile-card {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 2.5rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .profile-avatar-large {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #60a5fa, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: bold;
-            font-size: 2.5rem;
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-        }
-
-        .profile-info h2 {
-            font-size: 1.8rem;
-            margin-bottom: 0.3rem;
-        }
-
-        .profile-info p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .form-input:focus {
-            outline: none;
-            background: rgba(0, 0, 0, 0.3);
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-
-        .form-button {
-            padding: 1rem 2rem;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 1rem;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
-        }
-
-        .form-button:hover {
-            background: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-            margin-top: 1rem;
-        }
-
-        .back-link:hover {
-            color: #fff;
-        }
-
-        @media (max-width: 768px) {
-            .navbar {
-                flex-direction: column;
-                padding: 1rem;
-            
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-            .navbar-menu {
-                order: 3;
-                margin-top: 1rem;
-                width: 100%;
-                justify-content: center;
-            }
-
-            .navbar-user {
-                margin-left: auto;
-            }
-
-            .profile-header {
-                flex-direction: column;
-                text-align: center;
-            }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
+<body class="bg-background text-on-surface">
+    {% include '_navbar.html' %}
+    {% include '_sidebar.html' %}
 
-<body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-
-        {% include '_navbar.html' %}<div class="container glass-panel">
-        <div class="header">
-            <h1>My Profile</h1>
-            <p>Manage your account settings</p>
+    <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1000px] transition-all duration-300 mx-auto">
+        <div class="mb-10">
+            <h1 class="text-4xl font-extrabold text-white mb-2">My Profile</h1>
+            <p class="text-lg text-slate-400">Manage your account credentials and security settings.</p>
         </div>
 
-        <div class="content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="mb-6 p-4 rounded-2xl border {{ 'bg-green-500/10 border-green-500/20 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/20 text-red-400' }}">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined">{{ 'check_circle' if category == 'success' else 'error' }}</span>
+                <span class="font-bold text-sm">{{ message }}</span>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-            <div class="profile-card">
-                <div class="profile-header">
-                    <div class="profile-avatar-large">{{ user.username[0].upper() }}</div>
-                    <div class="profile-info">
-                        <h2>{{ user.username }}</h2>
-                        <p>User Tag: #{{ user.id }}</p>
-                    </div>
-                <form method="POST" action="{{ url_for('profile') }}">
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" class="form-input" 
-                            value="{{ user.username }}" required>
+        <div class="surface_glass rounded-3xl overflow-hidden glow-indigo">
+            <div class="p-8 bg-white/5 border-b border-white/10 flex items-center gap-6">
+                <div class="w-20 h-20 rounded-full border-2 border-indigo-500/30 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-white text-3xl shadow-[0_0_30px_rgba(79,70,229,0.4)]">
+                    {{ user.username[0].upper() }}
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-white leading-none">{{ user.username }}</h2>
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-2">User Tag: #{{ user.id }}</p>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('profile') }}" class="p-8 space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2">
+                        <label for="username" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
+                        <input type="text" id="username" name="username" value="{{ user.username }}" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                     </div>
 
-                    <div class="form-group">
-                        <label for="security_question">Security Question</label>
-                        <select id="security_question" name="security_question" class="form-input">
+                    <div class="space-y-2">
+                        <label for="security_question" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Security Question</label>
+                        <select id="security_question" name="security_question" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none">
                             <option value="" {% if not user.security_question %}selected{% endif %} disabled>Select a security question</option>
                             <option value="What was your first pet's name?" {% if user.security_question == "What was your first pet's name?" %}selected{% endif %}>What was your first pet's name?</option>
                             <option value="What is your mother's maiden name?" {% if user.security_question == "What is your mother's maiden name?" %}selected{% endif %}>What is your mother's maiden name?</option>
@@ -396,50 +66,50 @@
                             <option value="In what city were you born?" {% if user.security_question == "In what city were you born?" %}selected{% endif %}>In what city were you born?</option>
                             <option value="What is your favorite book?" {% if user.security_question == "What is your favorite book?" %}selected{% endif %}>What is your favorite book?</option>
                         </select>
-                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem;">Used for password recovery</p>
                     </div>
 
-                    <div class="form-group">
-                        <label for="security_answer">Security Answer</label>
-                        <input type="text" id="security_answer" name="security_answer" class="form-input" 
-                            placeholder="Type new answer to update">
-                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem;">Leave blank to keep existing answer</p>
+                    <div class="space-y-2">
+                        <label for="security_answer" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Security Answer</label>
+                        <input type="text" id="security_answer" name="security_answer" placeholder="••••••••" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                        <p class="text-[10px] text-slate-500 px-1">Leave blank to keep current answer.</p>
                     </div>
+                </div>
 
-                    <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 2rem 0;">
+                <div class="pt-8 border-t border-white/10">
+                    <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-indigo-400">lock</span> Change Password
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-2 md:col-span-2">
+                            <label for="current_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" required class="w-full bg-indigo-950/40 border border-indigo-500/20 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Enter current password to save changes">
+                            <p class="text-[10px] text-red-400 px-1 font-bold">Required to confirm any account modifications.</p>
+                        </div>
 
-                    <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Change Password</h3>
-                    <div class="form-group">
-                        <label for="current_password">Current Password</label>
-                        <input type="password" id="current_password" name="current_password" class="form-input" 
-                            placeholder="Enter current password to make changes">
-                        <p style="font-size: 0.8rem; color: rgba(248, 113, 113, 0.8); margin-top: 0.5rem;">Required to change username, password, or security settings</p>
+                        <div class="space-y-2">
+                            <label for="new_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">New Password</label>
+                            <input type="password" id="new_password" name="new_password" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="New password">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="confirm_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Confirm New Password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Repeat new password">
+                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="new_password">New Password</label>
-                        <input type="password" id="new_password" name="new_password" class="form-input" 
-                            placeholder="Type new password">
-                    </div>
+                <div class="flex justify-end pt-4">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95">Update Profile</button>
+                </div>
+            </form>
+        </div>
 
-                    <div class="form-group">
-                        <label for="confirm_password">Confirm New Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" 
-                            placeholder="Confirm new password">
-                    </div>
-
-                    <button type="submit" class="form-button">Update Profile</button>
-                </form>
-            </div>
-
-            <a href="{{ url_for('index') }}" class="back-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
-                Back to Dashboard
+        <div class="mt-8">
+            <a href="{{ url_for('index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors font-bold text-sm uppercase tracking-widest">
+                <span class="material-symbols-outlined">arrow_back</span> Back to Dashboard
             </a>
         </div>
-    </div>
+    </main>
 </body>
-
 </html>

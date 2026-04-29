@@ -1,413 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malaysian Sign Language Detector</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Detection Lab | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --secondary: #2563eb;
-            --accent: #10b981;
-            --accent-glow: rgba(16, 185, 129, 0.4);
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc;
-            --text-muted: #cbd5e1;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        /* Animated Background Orbs */
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            animation: float 20s infinite ease-in-out;
-            opacity: 0.5;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -100px;
-            left: -100px;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: #2563eb;
-            bottom: -200px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        .orb-3 {
-            width: 300px;
-            height: 300px;
-            background: #8b5cf6;
-            top: 40%;
-            left: 30%;
-            animation-delay: -10s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-        }
-
-        /* Glassmorphism Utilities */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* Navigation */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            margin: 1.5rem;
-            z-index: 10;
-        
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .navbar-menu {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .navbar-item {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        
-        white-space: nowrap;}
-
-        .navbar-item:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .navbar-item.active {
-            color: #fff;
-            background: rgba(79, 70, 229, 0.3);
-            border: 1px solid rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1rem;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fff;
-        }
-
-        /* Main Dashboard Layout */
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            grid-template-rows: auto 1fr;
-            gap: 1.5rem;
-            padding: 0 1.5rem 1.5rem;
-            max-width: 1600px;
-            margin: 0 auto;
-            width: 100%;
-            flex: 1;
-        }
-
-        /* Top Header Area */
-        .page-header {
-            grid-column: 1 / -1;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding-bottom: 0.5rem;
-        }
-
-        .page-title h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.2rem;
-        }
-
-        .page-title p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-
-        /* Left Sidebar - Status & Practice */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        /* Prediction Readout */
-        .prediction-panel {
-            padding: 2rem;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 250px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .prediction-panel::before {
-            content: '';
+        .cam-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #60a5fa, #a78bfa);
-        }
-
-        .pred-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-        }
-
-        .pred-value {
-            font-size: 6rem;
-            font-weight: 800;
-            line-height: 1;
-            background: linear-gradient(135deg, #fff, #a5b4fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 40px rgba(165, 180, 252, 0.3);
-            transition: all 0.2s ease;
-        }
-
-        /* Confidence Bars */
-        .confidence-list {
-            width: 100%;
-            margin-top: 2rem;
-        }
-
-        .conf-item {
-            margin-bottom: 0.8rem;
-        }
-
-        .conf-header {
+            top: 1.5rem;
+            left: 1.5rem;
+            right: 1.5rem;
             display: flex;
             justify-content: space-between;
-            font-size: 0.85rem;
-            margin-bottom: 0.3rem;
-            color: var(--text-muted);
+            pointer-events: none;
+            z-index: 10;
         }
-
-        .conf-track {
-            height: 6px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .conf-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        /* Practice Module */
-        .practice-panel {
-            padding: 1.5rem;
+        .rec-indicator {
             display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .practice-header {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-        }
-
-        .practice-header h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .tutorial-badge {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 0.3rem 0.6rem;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            padding: 0.4rem 0.8rem;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
+            color: white;
         }
-
-        .tutorial-badge:hover {
-            background: rgba(16, 185, 129, 0.25);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px var(--accent-glow);
+        .rec-dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ef4444;
+            animation: blink 2s infinite;
         }
-
-        .practice-input-group {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .pr-input {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.6rem 1rem;
-            border-radius: 8px;
-            color: #fff;
-            text-transform: uppercase;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .pr-input:focus {
-            border-color: var(--primary-light);
-        }
-
-        .pr-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 0 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .pr-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .pr-btn.primary {
-            background: var(--primary);
-            border-color: var(--primary-light);
-        }
-
-        .pr-btn.primary:hover:not(:disabled) {
-            background: var(--primary-light);
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
-        }
-
-        .pr-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .practice-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-
-        .target-sequence {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            min-height: 40px;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.15);
-            border-radius: 10px;
-            padding: 1rem;
-        }
-
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        
         .seq-char {
             width: 36px;
             height: 36px;
@@ -419,343 +56,178 @@
             border-radius: 8px;
             font-weight: 700;
             font-size: 1.2rem;
-            color: var(--text-muted);
+            color: #94a3b8;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
         .seq-char.active {
-            border-color: var(--primary-light);
+            border-color: #6366f1;
             color: #fff;
             background: rgba(79, 70, 229, 0.2);
             transform: scale(1.15);
             box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
         }
-
         .seq-char.done {
-            border-color: var(--accent);
-            color: var(--accent);
+            border-color: #10b981;
+            color: #10b981;
             background: rgba(16, 185, 129, 0.1);
             transform: scale(0.95);
         }
-
-        .status-msg {
-            font-size: 0.85rem;
-            text-align: center;
-            margin-top: 0.5rem;
-            color: var(--text-muted);
-            min-height: 1.2em;
-        }
-
-        .status-msg.active {
-            color: #60a5fa;
-        }
-
-        .status-msg.success {
-            color: var(--accent);
-        }
-
-        /* Main Video Area */
-        .main-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .video-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            min-height: calc(100vh - 250px);
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        .video-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        /* Camera overlay UI elements */
-        .cam-overlay {
-            position: absolute;
-            top: 1.5rem;
-            left: 1.5rem;
-            right: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            pointer-events: none;
-        }
-
-        .rec-indicator {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .rec-dot {
-            width: 8px;
-            height: 8px;
-            background: #ef4444;
-            border-radius: 50%;
-            box-shadow: 0 0 8px #ef4444;
-            animation: blink 2s infinite;
-        }
-
-        @keyframes blink {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.4;
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .dashboard-container {
-                grid-template-columns: 1fr;
-            }
-
-            .video-wrapper {
-                min-height: 400px;
-            }
-
-            .sidebar {
-                flex-direction: row;
-            }
-
-            .prediction-panel,
-            .practice-panel {
-                flex: 1;
-            }
-
-            .prediction-panel {
-                min-height: 200px;
-            }
-
-            .pred-value {
-                font-size: 4.5rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                flex-direction: column;
-            }
-
-            .navbar {
-                flex-direction: column;
-                padding: 1rem;
-            
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-            .navbar-menu {
-                width: 100%;
-                justify-content: center;
-                order: 3;
-                margin-top: 1rem;
-            }
-
-            .navbar-user {
-                margin-left: auto;
-            }
-        }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
+<body class="bg-background text-on-surface">
+    {% include '_navbar.html' %}
+    {% include '_sidebar.html' %}
 
-<body>
-    <!-- Background Elements -->
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-    <div class="bg-orb orb-3"></div>
-
-        {% include '_navbar.html' %}<div class="dashboard-container">
-        <div class="page-header">
-            <div class="page-title">
-                <h1>Detection Lab</h1>
-                <p>Real-time machine learning sign inference</p>
-            </div>
+    <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1400px] transition-all duration-300">
+        <div class="mb-10">
+            <h1 class="text-4xl font-extrabold text-white mb-2">Detection Lab</h1>
+            <p class="text-lg text-slate-400">Real-time sign language inference and practice module.</p>
         </div>
 
-        <aside class="sidebar">
-            <div class="prediction-panel glass-panel">
-                <span class="pred-label">Live Inference</span>
-                <div class="pred-value" id="prediction">-</div>
-
-                <div class="confidence-list" id="confidence-bars">
-                    <p style="text-align:center; color:rgba(255,255,255,0.3); font-size: 0.85rem;">Awaiting visual
-                        input...</p>
+        <div class="grid grid-cols-12 gap-8">
+            <!-- Sidebar Panel -->
+            <div class="col-span-12 lg:col-span-4 space-y-8">
+                <!-- Inference Status -->
+                <div class="surface_glass rounded-3xl p-8 glow-indigo flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Live Inference</span>
+                    <div id="prediction" class="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-indigo-300 drop-shadow-[0_0_30px_rgba(79,70,229,0.3)]">-</div>
+                    
+                    <div class="w-full mt-10 space-y-4" id="confidence-bars">
+                        <p class="text-center text-xs text-slate-500 italic">Awaiting visual input...</p>
+                    </div>
                 </div>
-            </div>
 
-            <div class="practice-panel glass-panel">
-                <div class="practice-header">
-                    <h3>Training Mode</h3>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <select id="mode-selector" onchange="switchPracticeMode(this.value)"
-                            style="background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.8rem; outline: none;">
+                <!-- Training Mode -->
+                <div class="surface_glass rounded-3xl p-8 glow-indigo">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold text-white">Training Mode</h3>
+                        <select id="mode-selector" onchange="switchPracticeMode(this.value)" class="bg-indigo-950/40 border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="spelling">Spelling</option>
                             <option value="words">Words</option>
                         </select>
-                        <div class="tutorial-badge" onclick="startQuickTutorial()" title="Learn Basic Signs">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="16" x2="12" y2="12"></line>
-                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                            </svg>
-                            Tutorial
+                    </div>
+
+                    <div id="mode-info" class="text-xs text-slate-400 mb-6 p-3 bg-white/5 rounded-xl border border-white/5">
+                        Currently in <strong class="text-indigo-400">Spelling</strong> Mode.
+                    </div>
+
+                    <div class="flex gap-2 mb-6">
+                        <input type="text" id="practice-input" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Enter word..." maxlength="50">
+                        <button onclick="addWord()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 rounded-xl font-bold text-sm transition-all active:scale-95">Set</button>
+                    </div>
+
+                    <div id="letter-tiles" class="flex flex-wrap gap-2 justify-center p-4 bg-black/20 rounded-2xl mb-6 min-h-[60px] items-center">
+                        <span class="text-xs text-slate-500 italic">Sequence preview</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <button id="start-btn" onclick="startPractice()" disabled class="py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-bold text-sm shadow-lg transition-all active:scale-95">Initialize</button>
+                        <button onclick="resetPractice()" class="py-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 font-bold text-sm border border-white/10 transition-all active:scale-95">Abort</button>
+                    </div>
+
+                    <div id="practice-status" class="text-center text-xs font-bold text-slate-500 tracking-wide uppercase">System Standby</div>
+                </div>
+
+                <!-- Feedback Section -->
+                <div class="surface_glass rounded-3xl p-8 glow-indigo">
+                    <h3 class="text-xl font-bold text-white mb-6">Community Suggestions</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="feedback-input" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Suggest a word..." maxlength="50">
+                        <button onclick="submitWordRequest()" class="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-4 rounded-xl font-bold text-xs hover:bg-indigo-500/30 transition-all">Suggest</button>
+                    </div>
+                    <div id="feedback-msg" class="text-[10px] text-center h-4 mb-4"></div>
+                    
+                    <h4 class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-3">My Requests</h4>
+                    <div id="my-requests-list" class="max-height-[120px] overflow-y-auto space-y-2 p-3 bg-black/20 rounded-xl text-xs text-slate-400 mb-4">
+                        Loading...
+                    </div>
+                    
+                    <h4 class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-3">Recently Added</h4>
+                    <div id="recent-requests-list" class="flex flex-wrap gap-2">
+                        <!-- Badges injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Feed Panel -->
+            <div class="col-span-12 lg:col-span-8 space-y-8">
+                <div class="surface_glass rounded-3xl overflow-hidden relative glow-indigo aspect-video flex items-center justify-center">
+                    <div class="cam-overlay">
+                        <div class="rec-indicator">
+                            <div class="rec-dot"></div> ACTIVE FEED
+                        </div>
+                        <div class="rec-indicator bg-indigo-500/50">TFv2 Model Load</div>
+                    </div>
+                    <img src="{{ url_for('video_feed') }}" class="w-full h-full object-contain" alt="Camera Feed">
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex justify-between items-center">
+                    <div class="flex gap-4">
+                        <button onclick="startQuickTutorial()" class="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-500/20 transition-all active:scale-95">
+                            <span class="material-symbols-outlined text-lg">school</span> Tutorial
+                        </button>
+                        <form method="POST" action="{{ url_for('settings') }}" class="m-0">
+                            <input type="hidden" name="action" value="toggle_camera">
+                            <button type="submit" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 {{ 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20' if camera_active else 'bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20' }}">
+                                <span class="material-symbols-outlined text-lg">{{ 'videocam_off' if camera_active else 'videocam' }}</span>
+                                {{ 'Disable Camera' if camera_active else 'Enable Camera' }}
+                            </button>
+                        </form>
+                    </div>
+                    <button onclick="toggleCharts()" class="flex items-center gap-2 bg-white/5 border border-white/10 text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white/10 transition-all active:scale-95">
+                        <span class="material-symbols-outlined text-lg">analytics</span>
+                        <span id="chart-toggle-text">Hide Analytics</span>
+                    </button>
+                </div>
+
+                <!-- Charts Section -->
+                <div id="charts-container" class="grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-300">
+                    <div class="surface_glass rounded-3xl p-6 glow-indigo">
+                        <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-indigo-400">trending_up</span> Top Users
+                        </h3>
+                        <div class="h-[250px] relative">
+                            <canvas id="top-users-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="surface_glass rounded-3xl p-6 glow-indigo">
+                        <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-purple-400">bar_chart</span> Most Practiced
+                        </h3>
+                        <div class="h-[250px] relative">
+                            <canvas id="hand-sign-chart"></canvas>
                         </div>
                     </div>
                 </div>
-                
-                <div id="mode-info" style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.5rem; margin-bottom: 0.5rem;">
-                    Currently in <strong>Spelling</strong> Mode. Switch to <strong>Words</strong> to recognize full signs.
-                </div>
-
-                <div class="practice-input-group">
-                    <input type="text" id="practice-input" class="pr-input" placeholder="Enter word/phrase..."
-                        maxlength="15">
-                    <button class="pr-btn" onclick="addWord()">Set</button>
-                </div>
-
-                <div class="target-sequence" id="letter-tiles">
-                    <span style="color: rgba(255,255,255,0.3); font-size: 0.85rem;">Sequence preview</span>
-                </div>
-
-                <div class="practice-controls">
-                    <button class="pr-btn primary" id="start-btn" onclick="startPractice()" disabled>Initialize</button>
-                    <button class="pr-btn" onclick="resetPractice()">Abort</button>
-                </div>
-
-                <div class="status-msg" id="practice-status">System Standby</div>
-
-                <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 0.5rem 0;">
-
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);">Camera Control:</span>
-                    <form method="POST" action="{{ url_for('settings') }}" style="margin: 0;">
-                        <input type="hidden" name="action" value="toggle_camera">
-                        <button type="submit" class="pr-btn {{ 'primary' if not camera_active else '' }}"
-                            style="font-size: 0.8rem; padding: 0.3rem 0.8rem; {{ 'border-color: #ef4444; color: #fca5a5;' if camera_active else '' }}">
-                            {{ 'Enable Camera' if not camera_active else 'Disable Camera' }}
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            <div class="practice-panel glass-panel">
-                <div class="practice-header">
-                    <h3>Community & Feedback</h3>
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Suggest words to add to the app!</div>
-                <div class="practice-input-group">
-                    <input type="text" id="feedback-input" class="pr-input" placeholder="E.g., Thank You" maxlength="50">
-                    <button class="pr-btn primary" onclick="submitWordRequest()">Suggest</button>
-                </div>
-                <div id="feedback-msg" class="status-msg"></div>
-                
-                <h4 style="margin-top: 1rem; font-size: 0.9rem; color: #cbd5e1;">My Requests</h4>
-                <div id="my-requests-list" style="max-height: 100px; overflow-y: auto; font-size: 0.8rem; color: var(--text-muted); background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 8px;">
-                    Loading...
-                </div>
-                
-                <h4 style="margin-top: 1rem; font-size: 0.9rem; color: #cbd5e1;">Recently Added</h4>
-                <div id="recent-requests-list" style="display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem;">
-                    <!-- Badges injected by JS -->
-                </div>
-            </div>
-        </aside>
-
-        <main class="main-feed">
-            <div class="video-wrapper glass-panel">
-                <div class="cam-overlay">
-                    <div class="rec-indicator">
-                        <div class="rec-dot"></div> ACTIVE FEED
-                    </div>
-                    <div class="rec-indicator" style="background: rgba(79, 70, 229, 0.5);">TFv2 Model Load</div>
-                </div>
-                <img src="{{ url_for('video_feed') }}" alt="Camera Feed">
-            </div>
-        </main>
-
-        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: -0.5rem;">
-            <button onclick="toggleCharts()" class="pr-btn"
-                style="font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 3v18h18" />
-                    <path d="M18 17V9" />
-                    <path d="M13 17V5" />
-                    <path d="M8 17v-3" />
-                </svg>
-                <span id="chart-toggle-text">Hide Analytics</span>
-            </button>
-        </div>
-
-        <div class="charts-section" id="charts-container"
-            style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; transition: all 0.3s ease;">
-            <div class="chart-card glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column;">
-                <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">Top Users (Practice Time)</h3>
-                <div class="chart-wrapper" style="flex: 1; min-height: 240px; position: relative;">
-                    <canvas id="top-users-chart"></canvas>
-                </div>
-                <p style="margin-top: 0.8rem; text-align: center; font-size: 0.85rem; color: var(--text-muted);">Total
-                    seconds spent practicing</p>
-            </div>
-            <div class="chart-card glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column;">
-                <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">Your Most Practiced Signs</h3>
-                <div class="chart-wrapper" style="flex: 1; min-height: 240px; position: relative;">
-                    <canvas id="hand-sign-chart"></canvas>
-                </div>
-                <p style="margin-top: 0.8rem; text-align: center; font-size: 0.85rem; color: var(--text-muted);">Letters
-                    updated as you practice</p>
             </div>
         </div>
-    </div>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Existing Dashboard Logic
         let topUsersChart = null;
         let handSignChart = null;
 
         function toggleCharts() {
             const container = document.getElementById('charts-container');
             const text = document.getElementById('chart-toggle-text');
-            if (container.style.display === 'none') {
-                container.style.display = 'grid';
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
                 text.textContent = 'Hide Analytics';
             } else {
-                container.style.display = 'none';
+                container.classList.add('hidden');
                 text.textContent = 'Show Analytics';
             }
         }
 
-        // --- FEEDBACK MODULE ---
         async function submitWordRequest() {
             const input = document.getElementById('feedback-input');
             const msg = document.getElementById('feedback-msg');
             const word = input.value.trim();
-            
             if(!word) return;
-            
             try {
                 const res = await fetch('/submit_word_request', {
                     method: 'POST',
@@ -764,16 +236,11 @@
                 });
                 const data = await res.json();
                 msg.textContent = data.message || data.error;
-                msg.className = 'status-msg ' + (data.success ? 'success' : '');
-                if(data.success) {
-                    input.value = '';
-                    loadMyRequests();
-                }
-            } catch(e) {
-                msg.textContent = "Error submitting request";
-            }
+                msg.style.color = data.success ? '#10b981' : '#ef4444';
+                if(data.success) { input.value = ''; loadMyRequests(); }
+            } catch(e) { msg.textContent = "Error submitting request"; }
         }
-        
+
         async function loadMyRequests() {
             const container = document.getElementById('my-requests-list');
             try {
@@ -781,17 +248,15 @@
                 const data = await res.json();
                 if(data.requests && data.requests.length > 0) {
                     container.innerHTML = data.requests.map(r => 
-                        `<div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem; padding-bottom: 0.2rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        `<div class="flex justify-between border-b border-white/5 pb-1 mb-1">
                             <span>${r.word}</span>
-                            <span style="color: ${r.status === 'Added' ? '#10b981' : (r.status === 'Rejected' ? '#ef4444' : '#fbbf24')}">${r.status}</span>
+                            <span class="font-bold ${r.status === 'Added' ? 'text-green-400' : (r.status === 'Rejected' ? 'text-red-400' : 'text-yellow-400')}">${r.status}</span>
                          </div>`
                     ).join('');
-                } else {
-                    container.innerHTML = 'No requests yet.';
-                }
+                } else { container.innerHTML = 'No requests yet.'; }
             } catch(e) {}
         }
-        
+
         async function loadRecentRequests() {
             const container = document.getElementById('recent-requests-list');
             try {
@@ -799,361 +264,244 @@
                 const data = await res.json();
                 if(data.recent && data.recent.length > 0) {
                     container.innerHTML = data.recent.map(r => 
-                        `<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(16, 185, 129, 0.3);">${r}</span>`
+                        `<span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded text-[10px] font-bold">${r}</span>`
                     ).join('');
                 }
             } catch(e) {}
         }
-        
-        window.addEventListener('DOMContentLoaded', () => {
-            loadSystemLabels();
-            loadMyRequests();
-            loadRecentRequests();
-        });
 
-        const baseChartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            color: '#cbd5e1',
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { precision: 0, color: '#94a3b8' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                },
-                x: {
-                    ticks: { autoSkip: false, color: '#94a3b8' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                }
-            },
-            plugins: {
-                legend: { display: false }
-            }
-        };
+        // --- DASHBOARD CORE LOGIC ---
+        let labels = [];
+        let activeMode = 'spelling';
+        let currentSequence = "";
+        let currentIndex = 0;
+        let isPracticeActive = false;
 
-        function renderTopUsersChart(topUsers) {
-            const ctx = document.getElementById('top-users-chart');
-            if (!ctx) return;
-            const context = ctx.getContext('2d');
-            const chartLabels = topUsers.length ? topUsers.map(user => user.username) : ['No data'];
-            const chartData = topUsers.length ? topUsers.map(user => user.practice_time_seconds) : [0];
-            const dataset = {
-                labels: chartLabels,
-                datasets: [{
-                    label: 'Practice Time (seconds)',
-                    data: chartData,
-                    backgroundColor: 'rgba(96, 165, 250, 0.8)',
-                    borderColor: '#60a5fa',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            };
-
-            if (!topUsersChart) {
-                topUsersChart = new Chart(context, {
-                    type: 'bar',
-                    data: dataset,
-                    options: baseChartOptions
-                });
-            } else {
-                topUsersChart.data = dataset;
-                topUsersChart.update();
-            }
-        }
-
-        function renderHandSignChart(handSigns) {
-            const ctx = document.getElementById('hand-sign-chart');
-            if (!ctx) return;
-            const context = ctx.getContext('2d');
-            const chartLabels = handSigns.length ? handSigns.map(item => item.letter) : ['No data'];
-            const chartData = handSigns.length ? handSigns.map(item => item.practice_count) : [0];
-            const dataset = {
-                labels: chartLabels,
-                datasets: [{
-                    label: 'Practice Count',
-                    data: chartData,
-                    backgroundColor: 'rgba(167, 139, 250, 0.8)',
-                    borderColor: '#a78bfa',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            };
-
-            if (!handSignChart) {
-                handSignChart = new Chart(context, {
-                    type: 'bar',
-                    data: dataset,
-                    options: baseChartOptions
-                });
-            } else {
-                handSignChart.data = dataset;
-                handSignChart.update();
-            }
-        }
-
-        async function fetchDashboardStats() {
-            try {
-                // Mock data since /dashboard_stats seems missing in app2.py
-                const mockTopUsers = [
-                    { username: 'Admin', practice_time_seconds: 1205 },
-                    { username: '{{ username }}', practice_time_seconds: 350 },
-                    { username: 'Guest', practice_time_seconds: 45 }
-                ];
-                const mockHandSigns = [
-                    { letter: 'A', practice_count: 15 },
-                    { letter: 'B', practice_count: 8 },
-                    { letter: 'C', practice_count: 12 },
-                    { letter: 'H', practice_count: 5 },
-                    { letter: 'E', practice_count: 9 }
-                ];
-                renderTopUsersChart(mockTopUsers);
-                renderHandSignChart(mockHandSigns);
-
-                // If the real endpoint exists, we can fetch it:
-                try {
-                    const response = await fetch('/dashboard_stats');
-                    if (response.ok) {
-                        const data = await response.json();
-                        renderTopUsersChart(data.top_users || []);
-                        renderHandSignChart(data.hand_signs || []);
-                    }
-                } catch (e) { }
-            } catch (error) {
-                console.error('Error loading dashboard stats:', error);
-            }
-        }
-
-        // Load charts on init
-        setTimeout(fetchDashboardStats, 500);
-        let practiceSequence = [];
-        let currentSequenceIndex = 0;
-        let practiceActive = false;
-        let matchedCount = 0;
-        const MATCH_THRESHOLD = 3;
-        let awaitingReset = false;
-
-
-        let availableSystemLabels = [];
-        
         async function loadSystemLabels() {
-            const mode = document.getElementById('mode-selector').value;
             try {
-                const res = await fetch(`/get_labels?mode=${mode}`);
+                const res = await fetch('/get_labels?mode=' + activeMode);
                 const data = await res.json();
-                if(data.labels) {
-                    availableSystemLabels = data.labels;
+                labels = data.labels || [];
+                console.log("Labels loaded:", labels);
+            } catch(e) { console.error("Error loading labels"); }
+        }
+
+        function switchPracticeMode(mode) {
+            activeMode = mode;
+            const info = document.getElementById('mode-info');
+            info.innerHTML = mode === 'spelling' 
+                ? 'Currently in <strong class="text-indigo-400">Spelling</strong> Mode. Characters are recognized one by one.' 
+                : 'Currently in <strong class="text-primary">Words</strong> Mode. Full signs are recognized at once.';
+            loadSystemLabels();
+            resetPractice();
+        }
+
+        function tokenizeInput(inputString, knownLabels) {
+            const sortedLabels = [...knownLabels].map(l => l.toUpperCase()).sort((a, b) => b.length - a.length);
+            let remaining = inputString.trim().toUpperCase();
+            let tokens = [];
+            while (remaining.length > 0) {
+                remaining = remaining.trimStart();
+                if (remaining.length === 0) break;
+                let matchedLabel = null;
+                for (const label of sortedLabels) {
+                    if (remaining.startsWith(label)) {
+                        const nextChar = remaining.charAt(label.length);
+                        if (nextChar === '' || nextChar === ' ') {
+                            matchedLabel = label;
+                            break;
+                        }
+                    }
+                }
+                if (matchedLabel) {
+                    tokens.push(matchedLabel);
+                    remaining = remaining.slice(matchedLabel.length);
+                } else {
+                    const unknownWord = remaining.split(' ')[0];
+                    return { success: false, unknownWord: unknownWord };
+                }
+            }
+            return { success: true, tokens: tokens };
+        }
+
+        function addWord() {
+            const input = document.getElementById('practice-input');
+            const word = input.value.trim().toUpperCase();
+            if(!word) return;
+            
+            if(activeMode === 'words') {
+                const result = tokenizeInput(word, labels);
+                if(!result.success) {
+                    alert(`Word "${result.unknownWord}" is not in our recognition database yet! Try spelling it or suggest it below.`);
+                    return;
+                }
+                currentSequence = result.tokens;
+            } else {
+                currentSequence = word.split('');
+            }
+            
+            currentIndex = 0;
+            renderTiles();
+            document.getElementById('start-btn').disabled = false;
+        }
+
+        function renderTiles() {
+            const container = document.getElementById('letter-tiles');
+            if(activeMode === 'spelling') {
+                container.innerHTML = currentSequence.map((char, i) => 
+                    `<span class="seq-char ${i < currentIndex ? 'done' : (i === currentIndex && isPracticeActive ? 'active' : '')}">${char}</span>`
+                ).join('');
+            } else {
+                container.innerHTML = currentSequence.map((wordItem, i) => 
+                    `<span class="px-3 py-2 bg-slate-800/80 border ${i < currentIndex ? 'border-green-500/50 text-green-400' : (i === currentIndex && isPracticeActive ? 'border-indigo-500/50 text-indigo-300 animate-pulse shadow-[0_0_10px_rgba(79,70,229,0.3)]' : 'border-slate-700/50 text-slate-400')} rounded-xl font-bold mx-1 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-all duration-300">${wordItem}</span>`
+                ).join('');
+            }
+        }
+
+        async function startPractice() {
+            try {
+                const res = await fetch('/start_practice', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({sequence: currentSequence})
+                });
+                const data = await res.json();
+                if(data.success) {
+                    isPracticeActive = true;
+                    currentIndex = 0;
+                    renderTiles();
+                    document.getElementById('practice-status').textContent = "PRACTICE ACTIVE";
+                    document.getElementById('practice-status').className = "text-center text-xs font-bold text-indigo-400 animate-pulse";
                 }
             } catch(e) {}
         }
 
-        const labelsOrig = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)); // legacy
-
-        async function addWord() {
-            const input = document.getElementById('practice-input');
-            const word = input.value.trim().toUpperCase();
-
-            if (!word) { alert('Please enter a word or phrase.'); return; }
-
-            const mode = document.getElementById('mode-selector').value;
-            let sequence = [];
-            
-            if (mode === 'spelling') {
-                sequence = word.replace(/\s+/g, '').split(''); // strip spaces
-            } else {
-                sequence = word.split(/\s+/); // split by space for multiple words
-            }
-
-            // Cross-check against global labels
-            for(let i=0; i < sequence.length; i++) {
-                if(!availableSystemLabels.includes(sequence[i])) {
-                    setStatus("This word is not in the system yet, but you can place a suggestion to add it!", "error");
-                    document.getElementById('practice-status').style.color = '#ef4444';
-                    return;
-                }
-            }
-            
-            document.getElementById('practice-status').style.color = ''; // reset
-
-            try {
-                const response = await fetch('/set_practice_word', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ word: word })
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    practiceSequence = sequence; 
-                    currentSequenceIndex = 0; 
-                    matchedCount = 0;
-                    renderSequenceTiles();
-                    document.getElementById('start-btn').disabled = false;
-                    setStatus('Sequence locked. Awaiting initialization.', '');
-                }
-            } catch (error) { console.error(error); }
+        function resetPractice() {
+            isPracticeActive = false;
+            currentSequence = [];
+            currentIndex = 0;
+            document.getElementById('practice-input').value = "";
+            document.getElementById('letter-tiles').innerHTML = '<span class="text-xs text-slate-500 italic">Sequence preview</span>';
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('practice-status').textContent = "System Standby";
+            document.getElementById('practice-status').className = "text-center text-xs font-bold text-slate-500";
+            fetch('/reset_practice', {method: 'POST'});
         }
 
-        async function startPractice() {
-            if (practiceSequence.length === 0) return;
-            try {
-                const response = await fetch('/start_practice', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                const data = await response.json();
-                if (data.success) {
-                    practiceActive = true; currentSequenceIndex = 0; matchedCount = 0;
-                    awaitingReset = true;
-                    renderSequenceTiles();
-                    document.getElementById('start-btn').disabled = true;
-                    setStatus(`Awaiting Hand Pose Reset... Please lower your hands.`, 'active');
-                }
-            } catch (error) { console.error(error); }
-        }
+        function startQuickTutorial() { window.location.href = "{{ url_for('tutorial') }}"; }
 
-        let consecutiveMatches = 0;
-        let activeModelMode = "spelling";
-
-        async function switchPracticeMode(mode) {
-            try {
-                const response = await fetch('/switch_mode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: mode })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    activeModelMode = data.mode;
-                    document.getElementById('mode-selector').value = activeModelMode;
-
-                    if (activeModelMode === 'spelling') {
-                        document.getElementById('mode-info').innerHTML = 'Currently in <strong>Spelling</strong> Mode. Switch to <strong>Words</strong> to recognize full signs.';
-                    } else {
-                        document.getElementById('mode-info').innerHTML = 'Currently in <strong>Words</strong> Mode. Switch to <strong>Spelling</strong> to spell letter by letter.';
-                    }
-
-                    await loadSystemLabels();
-
-                    // Reset existing practice when mode switches
-                    await fetch('/reset_practice', { method: 'POST' });
-                    document.getElementById('practice-input').value = "";
-                    document.getElementById('letter-tiles').innerHTML = '<span style="color: rgba(255,255,255,0.3); font-size: 0.85rem;">Sequence preview</span>';
-                    practiceSequence = [];
-                    document.getElementById('practice-status').style.color = '';
-                    setStatus('System Standby', '');
-                } else {
-                    console.error("Failed to switch mode :", data.error);
-                }
-            } catch (err) {
-                console.error("Error switching mode:", err);
-            }
-        }
-
-        async function resetPractice() {
-            try {
-                await fetch('/reset_practice', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                practiceSequence = []; practiceActive = false;
-                document.getElementById('practice-input').value = '';
-                document.getElementById('letter-tiles').innerHTML = '<span style="color: rgba(255,255,255,0.3); font-size: 0.85rem;">Sequence preview</span>';
-                document.getElementById('start-btn').disabled = true;
-                setStatus('System Standby', '');
-            } catch (error) { console.error(error); }
-        }
-
-        function renderSequenceTiles() {
-            const container = document.getElementById('letter-tiles');
-            if (practiceSequence.length === 0) return;
-            container.innerHTML = practiceSequence.map((item, i) => {
-                let cls = 'seq-char';
-                if (i < currentSequenceIndex) cls += ' done';
-                else if (i === currentSequenceIndex && practiceActive) cls += ' active';
-                return `<div class="${cls}" style="${item.length > 1 ? 'width: auto; padding: 0 10px;' : ''}">${item}</div>`;
-            }).join('');
-        }
-
-        function setStatus(msg, className) {
-            const el = document.getElementById('practice-status');
-            el.textContent = msg;
-            el.className = 'status-msg ' + className;
-        }
-
-        async function advanceToNextSequence() {
-            if (currentSequenceIndex < practiceSequence.length - 1) {
-                currentSequenceIndex++; matchedCount = 0;
-                await fetch('/advance_letter', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                renderSequenceTiles();
-                setStatus(`Target acquisition: [ ${practiceSequence[currentSequenceIndex]} ]`, 'active');
-            } else {
-                practiceActive = false; currentSequenceIndex++;
-                renderSequenceTiles();
-                setStatus('Sequence Complete.', 'success');
-                document.getElementById('start-btn').disabled = false;
-            }
-        }
-
+        // Interval to fetch predictions and update charts
         setInterval(async () => {
             try {
-                const response = await fetch('/get_prediction');
-                const data = await response.json();
-
-                let statPred = data.prediction && data.prediction !== '-' && data.prediction !== 'Waiting...' ? data.prediction : "";
-                let dynPred = data.dynamic_prediction && data.dynamic_prediction.trim() !== '' ? data.dynamic_prediction : "";
-                let currentPred = "-";
+                const res = await fetch('/get_prediction');
+                const data = await res.json();
                 
-                if (statPred && dynPred) {
-                    currentPred = statPred + " / " + dynPred;
-                } else if (dynPred) {
-                    currentPred = dynPred;
-                } else if (statPred) {
-                    currentPred = statPred;
-                }
-                
+                // Update Prediction UI
                 const predEl = document.getElementById('prediction');
-                predEl.textContent = currentPred;
-                if (currentPred.length > 4) {
-                    predEl.style.fontSize = '3.5rem';
-                } else {
-                    predEl.style.fontSize = '6rem';
+                const p = data.prediction || "-";
+                predEl.textContent = p;
+
+                // Update Confidence Bars
+                const confContainer = document.getElementById('confidence-bars');
+                if(data.confidence_scores && data.confidence_scores.length > 0) {
+                    confContainer.innerHTML = data.confidence_scores.slice(0, 3).map(c => `
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                <span>${c.label}</span>
+                                <span>${(c.confidence * 100).toFixed(0)}%</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style="width: ${c.confidence * 100}%"></div>
+                            </div>
+                        </div>
+                    `).join('');
                 }
 
-                if (data.confidence && data.confidence.length > 0) {
-                    const topConf = labelsOrig.map((label, idx) => ({ label, conf: data.confidence[idx] || 0 }))
-                        .sort((a, b) => b.conf - a.conf).slice(0, 3);
-
-                    document.getElementById('confidence-bars').innerHTML = topConf.map(item => {
-                        const pct = (item.conf * 100).toFixed(0);
-                        return `
-                            <div class="conf-item">
-                                <div class="conf-header"><span>${item.label}</span><span>${pct}%</span></div>
-                                <div class="conf-track"><div class="conf-fill" style="width: ${pct}%"></div></div>
-                            </div>`;
-                    }).join('');
-                }
-
-                if (practiceActive) {
-                    const target = practiceSequence[currentSequenceIndex];
-                    
-                    if (awaitingReset) {
-                        if (!currentPred || currentPred === '-' || currentPred === 'Waiting...' || currentPred === 'Ready. Show sign to begin.') {
-                            awaitingReset = false;
-                            setStatus(`Target acquisition: [ ${practiceSequence[currentSequenceIndex]} ]`, 'active');
+                // Update Practice Progress
+                if(isPracticeActive) {
+                    if(activeMode === 'spelling') {
+                        if(p === currentSequence[currentIndex]) {
+                            currentIndex++;
+                            renderTiles();
+                            if(currentIndex >= currentSequence.length) {
+                                document.getElementById('practice-status').textContent = "EXCELLENT! SEQUENCE COMPLETE";
+                                document.getElementById('practice-status').className = "text-center text-xs font-bold text-green-400";
+                                setTimeout(resetPractice, 3000);
+                            }
                         }
                     } else {
-                        if (currentPred === target) {
-                            matchedCount++;
-                            if (matchedCount >= MATCH_THRESHOLD) await advanceToNextSequence();
-                        } else { matchedCount = 0; }
+                        if(p === currentSequence) {
+                            document.getElementById('practice-status').textContent = "MATCH FOUND! WELL DONE";
+                            document.getElementById('practice-status').className = "text-center text-xs font-bold text-green-400";
+                            setTimeout(resetPractice, 3000);
+                        }
                     }
                 }
-            } catch (error) { }
-        }, 300);
+            } catch(e) {}
+        }, 100);
 
-        function startQuickTutorial() {
-            document.getElementById('practice-input').value = "ABCD";
-            addWord().then(() => {
-                setStatus('Tutorial Loaded. Click Initialize to begin.', 'active');
-            });
+        // Chart Updates
+        setInterval(async () => {
+            try {
+                const res = await fetch('/get_chart_data');
+                const data = await res.json();
+                updateCharts(data);
+            } catch(e) {}
+        }, 5000);
+
+        function updateCharts(data) {
+            const ctx1 = document.getElementById('top-users-chart').getContext('2d');
+            const ctx2 = document.getElementById('hand-sign-chart').getContext('2d');
+
+            if(!topUsersChart) {
+                topUsersChart = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: data.top_users.map(u => u.username),
+                        datasets: [{
+                            label: 'Seconds',
+                            data: data.top_users.map(u => u.time),
+                            backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                            borderColor: '#6366f1',
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+                });
+            } else {
+                topUsersChart.data.labels = data.top_users.map(u => u.username);
+                topUsersChart.data.datasets[0].data = data.top_users.map(u => u.time);
+                topUsersChart.update();
+            }
+
+            if(!handSignChart) {
+                handSignChart = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.hand_signs.map(h => h.label),
+                        datasets: [{
+                            data: data.hand_signs.map(h => h.count),
+                            backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, padding: 15, font: { size: 10 } } } }, cutout: '70%' }
+                });
+            } else {
+                handSignChart.data.labels = data.hand_signs.map(h => h.label);
+                handSignChart.data.datasets[0].data = data.hand_signs.map(h => h.count);
+                handSignChart.update();
+            }
         }
 
-        document.getElementById('practice-input').addEventListener('keypress', e => { if (e.key === 'Enter') addWord(); });
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSystemLabels();
+            loadMyRequests();
+            loadRecentRequests();
+            // Initial chart load
+            fetch('/get_chart_data').then(r => r.json()).then(updateCharts);
+        });
     </script>
 </body>
-
 </html>

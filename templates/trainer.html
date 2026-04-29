@@ -1,335 +1,113 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Dataset & Trainer - Bridge Sign</title>
+    <title>Trainer Module | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --secondary: #10b981;
-            --accent: #f59e0b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            z-index: 0;
-            opacity: 0.15;
-            animation: float 20s infinite ease-in-out;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -100px;
-            left: -100px;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: #2563eb;
-            bottom: -200px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            margin: 1.5rem;
-            z-index: 10;
-            position: relative;
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-            flex-wrap: nowrap;
-            overflow-x: auto;
-        }
-
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            white-space: nowrap;
-        }
-
-        .navbar-menu {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .navbar-item {
-            text-decoration: none;
-            color: #cbd5e1;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .navbar-item:hover {
-            color: #f8fafc;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .navbar-item.active {
-            color: #fff;
-            background: rgba(79, 70, 229, 0.3);
-            border: 1px solid rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            white-space: nowrap;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 10px;
-            text-decoration: none;
-        }
-
-        .container {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: row;
-            gap: 1.5rem;
-            max-width: 1400px;
-            margin: 1.5rem auto;
-            padding: 0 1.5rem;
-            align-items: stretch;
-            min-height: calc(100vh - 120px);
-        }
-
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-            padding: 1.5rem;
-        }
-
-        .left-col {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            align-items: center;
-        }
-
-        .right-col {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            overflow-y: auto;
-        }
-
-        .video-feed {
-            width: 100%;
-            max-width: 480px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(99, 102, 241, 0.3);
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 0.8rem;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #fff;
-            box-sizing: border-box;
-        }
-
-        .btn-action {
-            width: 100%;
-            padding: 1rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 0.5rem;
-        }
-
-        .btn-record {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .btn-record:hover { opacity: 0.9; }
-
-        .btn-train {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .btn-test {
-            background: var(--secondary);
-            color: #fff;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-            padding: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .terminal {
-            background: #000;
-            color: #34d399;
-            font-family: monospace;
-            padding: 1rem;
-            border-radius: 8px;
-            height: 250px !important;
-            min-height: 250px !important;
-            overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .progress-container {
-            width: 100%;
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: var(--primary-light);
-            width: 0%;
-            transition: width 0.1s;
-        }
-
-        .labels-box {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px;
+        .terminal-log {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
-<body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
+<body class="bg-background text-on-surface">
+    {% include '_navbar.html' %}
+    {% include '_sidebar.html' %}
 
-        {% include '_navbar.html' %}<div class="container">
-        <div class="left-col glass-panel">
-            <h2>Camera Feed</h2>
-            <img id="videoStream" src="{{ url_for('video_feed') }}" class="video-feed" alt="Trainer Feed">
-            <p style="color: var(--text-muted); text-align: center;">Make sure your hands are clearly visible in the frame.</p>
+    <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1400px] transition-all duration-300">
+        <div class="mb-10">
+            <h1 class="text-4xl font-extrabold text-white mb-2">Trainer Module</h1>
+            <p class="text-lg text-slate-400">Record custom sign data and train proprietary recognition models.</p>
         </div>
 
-        <div class="right-col glass-panel">
-            <h2>Dataset Recording</h2>
-            <div class="form-group">
-                <label for="label">Sign Label (e.g. A, B, Hello)</label>
-                <input type="text" id="label" class="form-input" placeholder="Enter class label">
-            </div>
-            <div class="form-group" style="margin-bottom: 2rem;">
-                <label for="trainingMode">Sign Type</label>
-                <select id="trainingMode" class="form-input" style="background:#1e293b;">
-                    <option value="static">Static Sign</option>
-                    <option value="dynamic">Dynamic Hand Gesture</option>
-                </select>
-            </div>
-            
-            <button class="btn-action btn-record" id="recordBtn" onclick="startRecording()">Start Recording Data</button>
-            <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
-            
-            <div class="form-group" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                <input type="text" id="deleteLabelInput" class="form-input" placeholder="Label to delete" style="flex: 1;">
-                <button class="btn-action btn-danger" style="width: auto; margin: 0;" onclick="deleteLabel()">Delete</button>
+        <div class="grid grid-cols-12 gap-8">
+            <!-- Left: Camera Feed -->
+            <div class="col-span-12 lg:col-span-7 space-y-8">
+                <div class="surface_glass rounded-3xl overflow-hidden relative glow-indigo aspect-video flex items-center justify-center bg-black">
+                    <img id="videoStream" src="{{ url_for('video_feed') }}" class="w-full h-full object-contain" alt="Trainer Feed">
+                    <div class="absolute top-6 left-6 flex items-center gap-2 bg-black/50 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 text-[10px] font-bold text-white tracking-widest uppercase">
+                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Raw Data Stream
+                    </div>
+                </div>
+                
+                <div class="surface_glass rounded-3xl p-8 glow-indigo">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-indigo-400">terminal</span> Model Training Output
+                    </h3>
+                    <div id="terminal" class="terminal-log bg-black/40 rounded-2xl p-6 h-[250px] overflow-y-auto font-mono text-xs text-indigo-300 border border-white/5 space-y-1">
+                        <div>> Trainer initialized. Awaiting commands...</div>
+                    </div>
+                </div>
             </div>
 
-            <hr style="border-color: rgba(255,255,255,0.1); width: 100%; margin: 1rem 0;">
+            <!-- Right: Controls -->
+            <div class="col-span-12 lg:col-span-5 space-y-8">
+                <!-- Recording Panel -->
+                <div class="surface_glass rounded-3xl p-8 glow-indigo">
+                    <h3 class="text-xl font-bold text-white mb-6">Recording Control</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Sign Label</label>
+                            <input type="text" id="label" class="w-full bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-indigo-500 outline-none transition-all" placeholder="e.g. HELLO, A, THANK_YOU">
+                        </div>
 
-            <h2>Model Training</h2>
-            <div class="terminal" id="terminal">
-                > Trainer initialized.<br>
-            </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Capture Type</label>
+                            <select id="trainingMode" class="w-full bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-indigo-500 outline-none transition-all appearance-none">
+                                <option value="static">Static Sign (Hand Position)</option>
+                                <option value="dynamic">Dynamic Gesture (Motion)</option>
+                            </select>
+                        </div>
 
-            <div style="display: flex; gap: 0.5rem; width: 100%;">
-                <button class="btn-action btn-train" id="trainBtn" onclick="trainModel()" style="flex: 1; font-size: 0.9rem;">Train Static</button>
-                <button class="btn-action btn-train" id="trainDynBtn" onclick="trainDynamicModel()" style="flex: 1; font-size: 0.9rem; background:#4f46e5;">Train Dynamic</button>
-            </div>
-            <button class="btn-action btn-test" id="testBtn" onclick="toggleTesting()">Test Trained Models</button>
+                        <div class="pt-2">
+                            <button id="recordBtn" onclick="startRecording()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined">radio_button_checked</span> Start Recording Data
+                            </button>
+                            <div class="mt-4 h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div id="progressBar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="labels-box">
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Labels in the system:</strong></p>
-                <p id="currentLabelsText" style="color: #fff; font-weight: 500; font-size: 1rem; word-wrap: break-word;">Loading...</p>
+                <!-- Labels & Actions -->
+                <div class="surface_glass rounded-3xl p-8 glow-indigo">
+                    <h3 class="text-xl font-bold text-white mb-6">Management</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex gap-2">
+                            <input type="text" id="deleteLabelInput" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-2 text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Label to delete...">
+                            <button onclick="deleteLabel()" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-2 rounded-xl text-[10px] font-bold hover:bg-red-500/20 transition-all">Delete</button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="trainBtn" onclick="trainModel()" class="py-3 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-xs hover:bg-indigo-500 hover:text-white transition-all">Train Static</button>
+                            <button id="trainDynBtn" onclick="trainDynamicModel()" class="py-3 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-xs hover:bg-indigo-500 hover:text-white transition-all">Train Dynamic</button>
+                        </div>
+
+                        <button id="testBtn" onclick="toggleTesting()" class="w-full py-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl font-bold text-xs hover:bg-green-500/20 transition-all">
+                            Test Trained Models
+                        </button>
+
+                        <div class="bg-black/20 rounded-2xl p-4 border border-white/5">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Dataset Contents</span>
+                            <div id="currentLabelsText" class="text-xs text-indigo-200 line-clamp-3">Loading...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
         let recordingInterval;
@@ -381,7 +159,7 @@
                 } else if(!data.is_recording && data.frames_recorded > 0) {
                     clearInterval(recordingInterval);
                     document.getElementById('progressBar').style.width = '100%';
-                    document.getElementById('recordBtn').innerText = "Data Saved! Record again if needed";
+                    document.getElementById('recordBtn').innerText = "Data Saved!";
                     document.getElementById('recordBtn').disabled = false;
                     fetchSystemLabels();
                     setTimeout(() => {
@@ -401,7 +179,7 @@
                 body: JSON.stringify({label: lbl})
             }).then(r => r.json()).then(data => {
                 if(data.success) {
-                    term.innerHTML += `> <span style="color:#ef4444">${data.message}</span><br>`;
+                    term.innerHTML += `<div>> <span class="text-red-400">${data.message}</span></div>`;
                     fetchSystemLabels();
                 } else {
                     alert(data.error);
@@ -413,11 +191,11 @@
         function trainModel() {
             fetch('/train_model', { method: 'POST' }).then(r => r.json()).then(data => {
                 if(data.success) {
-                    term.innerHTML += "> Starting STATIC training via MediaPipe Keypoints...<br>";
+                    term.innerHTML += "<div>> Starting STATIC training via MediaPipe Keypoints...</div>";
                     trainingInterval = setInterval(checkTrainingStatus, 1000);
                     document.getElementById('trainBtn').disabled = true;
                 } else {
-                    term.innerHTML += `> <span style="color:red">${data.error}</span><br>`;
+                    term.innerHTML += `<div>> <span class="text-red-400">${data.error}</span></div>`;
                 }
                 term.scrollTop = term.scrollHeight;
             });
@@ -426,11 +204,11 @@
         function trainDynamicModel() {
             fetch('/train_dynamic_model', { method: 'POST' }).then(r => r.json()).then(data => {
                 if(data.success) {
-                    term.innerHTML += "> Starting DYNAMIC Gesture training...<br>";
+                    term.innerHTML += "<div>> Starting DYNAMIC Gesture training...</div>";
                     trainingInterval = setInterval(checkTrainingStatus, 1000);
                     document.getElementById('trainDynBtn').disabled = true;
                 } else {
-                    term.innerHTML += `> <span style="color:red">${data.error}</span><br>`;
+                    term.innerHTML += `<div>> <span class="text-red-400">${data.error}</span></div>`;
                 }
                 term.scrollTop = term.scrollHeight;
             });
@@ -438,8 +216,8 @@
 
         function checkTrainingStatus() {
             fetch('/training_status').then(r => r.json()).then(data => {
-                term.innerHTML = "> Trainer Output:<br>";
-                data.log.forEach(l => { term.innerHTML += `> ${l}<br>`; });
+                term.innerHTML = "<div>> Trainer Output:</div>";
+                data.log.forEach(l => { term.innerHTML += `<div>> ${l}</div>`; });
                 term.scrollTop = term.scrollHeight;
                 if(!data.is_training) {
                     clearInterval(trainingInterval);
@@ -462,10 +240,12 @@
                     isTesting = data.is_testing;
                     if(isTesting) {
                         btn.innerText = "Stop Testing Model";
-                        btn.style.background = "#ef4444";
+                        btn.classList.add('bg-red-500/20', 'text-red-400', 'border-red-500/30');
+                        btn.classList.remove('bg-green-500/10', 'text-green-400', 'border-green-500/20');
                     } else {
                         btn.innerText = "Test Trained Model";
-                        btn.style.background = "var(--secondary)";
+                        btn.classList.remove('bg-red-500/20', 'text-red-400', 'border-red-500/30');
+                        btn.classList.add('bg-green-500/10', 'text-green-400', 'border-green-500/20');
                     }
                 } else { alert(data.error || "Must train model first!"); }
             });

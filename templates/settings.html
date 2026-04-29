@@ -1,484 +1,72 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Bridge Sign</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Settings | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --secondary: #2563eb;
-            --accent: #10b981;
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc;
-            --text-muted: #cbd5e1;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        /* Animated Background Orbs */
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            animation: float 20s infinite ease-in-out;
-            opacity: 0.5;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -100px;
-            left: -100px;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: #2563eb;
-            bottom: -200px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-        }
-
-        /* Glassmorphism Utilities */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* Navigation */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            margin: 1.5rem;
-            z-index: 10;
-        
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .navbar-menu {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .navbar-item {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        
-        white-space: nowrap;}
-
-        .navbar-item:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .navbar-item.active {
-            color: #fff;
-            background: rgba(79, 70, 229, 0.3);
-            border: 1px solid rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1rem;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fff;
-        }
-
-        /* Main Container */
-        .container {
-            max-width: 900px;
-            margin: 2rem auto;
-            width: calc(100% - 3rem);
-            padding: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .header {
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .header p {
-            color: var(--text-muted);
-            font-size: 1rem;
-        }
-
-        .alert {
-            padding: 1rem 1.2rem;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 1rem;
-        }
-
-        .alert-success {
-            color: #34d399;
-            border-color: rgba(52, 211, 153, 0.3);
-        }
-
-        .alert-error {
-            color: #f87171;
-            border-color: rgba(248, 113, 113, 0.3);
-        }
-
-        .settings-card {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 2rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .settings-card h2 {
-            font-size: 1.4rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .settings-card>p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            transition: transform 0.2s;
-        }
-
-        .setting-item:hover {
-            transform: translateY(-2px);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .setting-info h3 {
-            font-size: 1.1rem;
-            margin-bottom: 0.3rem;
-        }
-
-        .setting-info p {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.85rem;
-        }
-
-        .status-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .status-enabled {
-            background: rgba(52, 211, 153, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(52, 211, 153, 0.3);
-        }
-
-        .status-disabled {
-            background: rgba(248, 113, 113, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(248, 113, 113, 0.3);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .status-enabled .status-dot {
-            background: #34d399;
-            box-shadow: 0 0 8px #34d399;
-        }
-
-        .status-disabled .status-dot {
-            background: #f87171;
-        }
-
-        .form-select {
-            padding: 0.8rem 1.2rem;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            color: #fff;
-            font-family: inherit;
-            cursor: pointer;
-            transition: all 0.2s;
-            outline: none;
-            min-width: 200px;
-        }
-
-        .form-select option {
-            background: #1e1b4b;
-            color: #fff;
-        }
-
-        .form-select:focus {
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-
-        .btn-action {
-            padding: 0.8rem 1.5rem;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .camera-selector {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .alert-warning {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            padding: 1rem;
-            border-radius: 10px;
-            margin-top: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-            margin-top: 1rem;
-        }
-
-        .back-link:hover {
-            color: #fff;
-        }
-
-        @media (max-width: 768px) {
-            .navbar {
-                flex-direction: column;
-                padding: 1rem;
-            
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-            .navbar-menu {
-                order: 3;
-                margin-top: 1rem;
-                width: 100%;
-                justify-content: center;
-            }
-
-            .navbar-user {
-                margin-left: auto;
-            }
-
-            .setting-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1.5rem;
-            }
-
-            .camera-selector {
-                width: 100%;
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .btn-action {
-                width: 100%;
-            }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
+<body class="bg-background text-on-surface">
+    {% include '_navbar.html' %}
+    {% include '_sidebar.html' %}
 
-<body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-
-        {% include '_navbar.html' %}<div class="container glass-panel">
-        <div class="header">
-            <h1>Settings</h1>
-            <p>Configure your hardware preferences</p>
+    <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1000px] transition-all duration-300 mx-auto">
+        <div class="mb-10">
+            <h1 class="text-4xl font-extrabold text-white mb-2">System Settings</h1>
+            <p class="text-lg text-slate-400">Configure your hardware and visual preferences for the best experience.</p>
         </div>
 
-        <div class="content">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="mb-6 p-4 rounded-2xl border {{ 'bg-green-500/10 border-green-500/20 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/20 text-red-400' }}">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined">{{ 'check_circle' if category == 'success' else 'error' }}</span>
+                <span class="font-bold text-sm">{{ message }}</span>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-            <div class="settings-card">
-                <h2>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                        <circle cx="12" cy="13" r="4" />
-                    </svg>
-                    Camera Control
-                </h2>
-                <p>Toggle your video feed for real-time sign language detection.</p>
+        <div class="space-y-8">
+            <!-- Camera Control -->
+            <div class="surface_glass rounded-3xl p-8 glow-indigo">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="material-symbols-outlined text-indigo-400">videocam</span>
+                    <h2 class="text-2xl font-bold text-white">Camera Control</h2>
+                </div>
+                <p class="text-slate-400 mb-8">Toggle your video feed for real-time sign language detection. Keeping the camera disabled when not in use saves system resources.</p>
 
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h3>Capture Status</h3>
-                        <p>Feed is currently {{ 'active' if user.camera_enabled else 'inactive' }}</p>
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                            <span class="material-symbols-outlined">sensors</span>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold">Capture Status</h3>
+                            <p class="text-xs text-slate-500">System is currently {{ 'ready' if user.camera_enabled else 'standby' }}</p>
+                        </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span class="status-badge {{ 'status-enabled' if user.camera_enabled else 'status-disabled' }}">
-                            <span class="status-dot"></span>
+                    
+                    <div class="flex items-center gap-6">
+                        <span class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest {{ 'text-green-400' if user.camera_enabled else 'text-red-400' }}">
+                            <span class="w-2 h-2 rounded-full {{ 'bg-green-500 animate-pulse' if user.camera_enabled else 'bg-red-500' }}"></span>
                             {{ 'Enabled' if user.camera_enabled else 'Disabled' }}
                         </span>
 
                         <form method="POST" action="{{ url_for('settings') }}">
                             <input type="hidden" name="action" value="toggle_camera">
-                            <button type="submit"
-                                class="btn-action {{ 'btn-secondary' if user.camera_enabled else 'btn-primary' }}">
+                            <button type="submit" class="px-8 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all active:scale-95 {{ 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20' if user.camera_enabled else 'bg-indigo-600 text-white hover:bg-indigo-500' }}">
                                 {{ 'Disable Camera' if user.camera_enabled else 'Enable Camera' }}
                             </button>
                         </form>
@@ -486,68 +74,67 @@
                 </div>
             </div>
 
-            <div class="settings-card">
-                <h2>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    Hardware Selection
-                </h2>
-                <p>Choose the source for your video feed if multiple capture devices are present.</p>
+            <!-- Hardware Selection -->
+            <div class="surface_glass rounded-3xl p-8 glow-indigo">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="material-symbols-outlined text-purple-400">memory</span>
+                    <h2 class="text-2xl font-bold text-white">Hardware Selection</h2>
+                </div>
+                <p class="text-slate-400 mb-8">Choose the source for your video feed if multiple capture devices are present.</p>
 
-                <div class="setting-item">
-                    <div class="setting-info">
-                        <h3>Active Interface</h3>
-                        <p>Index binding: Camera {{ user.camera_index }}</p>
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                                <span class="material-symbols-outlined">usb</span>
+                            </div>
+                            <div>
+                                <h3 class="text-white font-bold">Active Interface</h3>
+                                <p class="text-xs text-slate-500">Device index binding: #{{ user.camera_index }}</p>
+                            </div>
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('settings') }}" class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                            <input type="hidden" name="action" value="change_camera">
+                            <select name="camera_index" class="bg-indigo-950/40 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500 transition-all appearance-none min-w-[200px]">
+                                {% if available_cameras %}
+                                {% for cam in available_cameras %}
+                                <option value="{{ cam.index }}" {% if cam.index == user.camera_index %}selected{% endif %}>
+                                    {{ cam.name }}
+                                </option>
+                                {% endfor %}
+                                {% else %}
+                                <option value="0">No interfaces detected</option>
+                                {% endif %}
+                            </select>
+                            <button type="submit" class="px-6 py-2.5 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-sm hover:bg-white/10 transition-all">Bind Device</button>
+                        </form>
                     </div>
-                    <form method="POST" action="{{ url_for('settings') }}" class="camera-selector">
-                        <input type="hidden" name="action" value="change_camera">
-                        <select name="camera_index" class="form-select" required>
-                            {% if available_cameras %}
-                            {% for cam in available_cameras %}
-                            <option value="{{ cam.index }}" {% if cam.index==user.camera_index %}selected{% endif %}>
-                                {{ cam.name }}
-                            </option>
-                            {% endfor %}
-                            {% else %}
-                            <option value="0">No interfaces detected</option>
-                            {% endif %}
-                        </select>
-                        <button type="submit" class="btn-action btn-secondary">Bind Device</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('refresh_cameras') }}" style="margin-top: 10px;">
-                        <button type="submit" class="btn-action btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
-                                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-                            </svg>
-                            Refresh List
-                        </button>
-                    </form>
+
+                    <div class="pt-4 border-t border-white/5 flex justify-between items-center">
+                        <p class="text-xs text-slate-500 italic">Not seeing your camera? Try refreshing the hardware list.</p>
+                        <form method="POST" action="{{ url_for('refresh_cameras') }}">
+                            <button type="submit" class="flex items-center gap-2 text-indigo-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                                <span class="material-symbols-outlined text-sm">refresh</span> Refresh Hardware
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 {% if not available_cameras %}
-                <div class="alert-warning">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                    No capture devices detected. Please verify your camera is operational and connected.
+                <div class="mt-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center gap-3">
+                    <span class="material-symbols-outlined">warning</span>
+                    <p class="text-xs font-bold">No capture devices detected. Please verify your camera is operational and connected.</p>
                 </div>
                 {% endif %}
             </div>
+        </div>
 
-            <a href="{{ url_for('index') }}" class="back-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
-                Back to Dashboard
+        <div class="mt-10">
+            <a href="{{ url_for('index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors font-bold text-sm uppercase tracking-widest">
+                <span class="material-symbols-outlined">arrow_back</span> Back to Dashboard
             </a>
         </div>
-    </div>
+    </main>
 </body>
-
 </html>

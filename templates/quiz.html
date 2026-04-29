@@ -1,846 +1,359 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Module - Bridge Sign</title>
+    <title>Quiz Module | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --accent: #10b981;
-            --danger: #ef4444;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            z-index: -1;
-            opacity: 0.5;
-            animation: float 20s infinite ease-in-out alternate;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -100px;
-            left: -100px;
-        }
-
-        .orb-2 {
-            width: 300px;
-            height: 300px;
-            background: #c026d3;
-            bottom: -50px;
-            right: -50px;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-            0% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            100% {
-                transform: translate(100px, 50px) scale(1.2);
-            }
-        }
-
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* Navigation */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            margin: 1.5rem;
-            z-index: 10;
-        
-        flex-wrap: nowrap;
-        overflow-x: auto;}
-
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .navbar-menu {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .navbar-item {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        
-        white-space: nowrap;}
-
-        .navbar-item:hover {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .navbar-item.active {
-            color: #fff;
-            background: rgba(79, 70, 229, 0.3);
-            border: 1px solid rgba(99, 102, 241, 0.5);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fff;
-        }
-
-        /* Container & Modules */
-        .main-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1.5rem 2rem 1.5rem;
-        }
-
-        .setup-container {
-            padding: 2rem;
-            margin-bottom: 2rem;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .quiz-container {
-            display: none;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 1.5rem;
-            height: calc(100vh - 160px);
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Setup UI */
-        .setup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 1rem;
-        }
-
-        .setup-header h2 {
-            font-size: 1.6rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .mode-toggle {
-            padding: 0.5rem 1rem;
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            outline: none;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        .mode-toggle:focus {
-            border-color: var(--primary);
-        }
-
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 1rem;
-        }
-
-        /* Custom Checkbox Tile */
-        .item-label {
-            display: block;
-            position: relative;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .item-label input {
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-            height: 0;
-            width: 0;
-        }
-
         .item-tile {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
+            padding: 0.75rem;
             background: rgba(0, 0, 0, 0.2);
-            border: 2px solid var(--glass-border);
+            border: 2px solid rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             font-weight: 600;
-            font-size: 1.2rem;
+            font-size: 1rem;
+            color: #94a3b8;
             transition: all 0.2s;
+            cursor: pointer;
         }
-
-        .item-label:hover input~.item-tile {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .item-label input:checked~.item-tile {
+        input:checked ~ .item-tile {
             background: rgba(99, 102, 241, 0.2);
-            border-color: var(--primary);
+            border-color: #6366f1;
             color: #fff;
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
         }
-
-        .setup-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid var(--glass-border);
-            padding-top: 1.5rem;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            border: 1px solid var(--primary-light);
-            color: white;
-            padding: 0.8rem 2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 600;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: var(--primary-light);
-            transform: translateY(-2px);
-        }
-
-        .btn-primary:disabled {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: transparent;
-            color: var(--text-muted);
-            cursor: not-allowed;
-            box-shadow: none;
-            transform: none;
-        }
-
-        /* Camera UI */
-        .camera-section {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            height: 100%;
-        }
-
-        .section-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .section-header h2 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .video-container {
-            flex: 1;
-            position: relative;
-            background: #000;
-            border-radius: 0 0 20px 20px;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .video-feed {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* Quiz Panel */
-        .quiz-panel {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            height: 100%;
-        }
-
-        .quiz-content {
-            flex: 1;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 0 0 20px 20px;
-            text-align: center;
-        }
-
-        .target-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .target-label {
-            font-size: 1rem;
-            color: var(--text-muted);
+        .feedback-text {
+            position: absolute;
+            top: -40px;
+            font-size: 1.5rem;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 1rem;
-        }
-
-        .target-value {
-            font-size: 4rem;
-            font-weight: 800;
-            color: var(--primary-light);
-            text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-            line-height: 1;
-            margin-bottom: 2rem;
-            word-break: break-all;
-        }
-
-        .progress-container {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 1rem;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: var(--accent);
-            width: 0%;
-            transition: width 0.3s ease;
-            box-shadow: 0 0 10px var(--accent);
-        }
-
-        .quiz-stats {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        .stat-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        /* Completion Overlay */
-        .completion-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
             opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
-            border-radius: 20px;
-        }
-
-        .completion-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .celebration-icon {
-            font-size: 5rem;
-            margin-bottom: 1rem;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-
-            0%,
-            20%,
-            50%,
-            80%,
-            100% {
-                transform: translateY(0);
-            }
-
-            40% {
-                transform: translateY(-30px);
-            }
-
-            60% {
-                transform: translateY(-15px);
-            }
-        }
-
-        @media (max-width: 1024px) {
-            .quiz-container {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-
-            .video-container {
-                min-height: 400px;
-            }
-
-            .quiz-content {
-                padding: 1.5rem;
-                min-height: 400px;
-            }
+            transition: all 0.3s;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
+<body class="bg-background text-on-surface">
+    {% include '_navbar.html' %}
+    {% include '_sidebar.html' %}
 
-<body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-
-        {% include '_navbar.html' %}<div class="main-container">
+    <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1400px] transition-all duration-300">
+        <div class="mb-10">
+            <h1 class="text-4xl font-extrabold text-white mb-2">Quiz Module</h1>
+            <p class="text-lg text-slate-400">Test your sign language knowledge with real-time evaluation.</p>
+        </div>
 
         <!-- Setup Screen -->
-        <div class="setup-container glass-panel" id="setupView">
-            <div class="setup-header">
-                <h2>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    Configure Quiz
-                </h2>
-                <div>
-                    <span style="color: var(--text-muted); margin-right: 1rem; font-size: 0.9rem;">Dictionary:</span>
-                    <select id="modeSelect" class="mode-toggle" onchange="fetchLabels()">
+        <div id="setupView" class="surface_glass rounded-3xl p-8 glow-indigo mb-12">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/10 pb-6 mb-8 gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-indigo-400">tune</span>
+                    <h3 class="text-2xl font-bold text-white">Configure Quiz</h3>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-bold text-slate-500 uppercase tracking-widest">Dictionary:</span>
+                    <select id="modeSelect" class="bg-indigo-950/40 border border-white/10 text-white text-sm rounded-xl px-4 py-2 outline-none focus:ring-1 focus:ring-indigo-500" onchange="fetchLabels()">
                         <option value="spelling">Spelling (A-Z)</option>
                         <option value="words">Words</option>
                     </select>
                 </div>
             </div>
 
-            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Select the signs you want to be tested on. They
-                will be presented in random order.</p>
+            <p class="text-slate-400 mb-8">Select the signs you want to be tested on. They will be presented in random order.</p>
 
-            <div class="items-grid" id="itemsGrid">
+            <div id="itemsGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mb-10 max-h-[350px] overflow-y-auto pr-4">
                 <!-- Checkboxes injected by JS -->
             </div>
 
-            <div class="setup-actions">
-                <div>
-                    <button class="btn-secondary" onclick="selectAll(true)" style="margin-right: 0.5rem;">Select
-                        All</button>
-                    <button class="btn-secondary" onclick="selectAll(false)">Clear</button>
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-6 pt-8 border-t border-white/10">
+                <div class="flex gap-3">
+                    <button onclick="selectAll(true)" class="px-6 py-2 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-sm hover:bg-white/10 transition-all">Select All</button>
+                    <button onclick="selectAll(false)" class="px-6 py-2 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-sm hover:bg-white/10 transition-all">Clear</button>
                 </div>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <span id="selectionCount" style="color: var(--text-muted); font-weight: 500;">0 selected</span>
-                    <button class="btn-primary" id="startBtn" onclick="startQuiz()" disabled>Start Quiz</button>
+                <div class="flex items-center gap-6">
+                    <span id="selectionCount" class="text-sm font-bold text-indigo-400">0 selected</span>
+                    <button id="startBtn" onclick="startQuiz()" disabled class="px-10 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-bold shadow-lg transition-all active:scale-95">Start Quiz</button>
                 </div>
             </div>
         </div>
 
         <!-- Active Quiz Screen -->
-        <div class="quiz-container" id="quizView">
+        <div id="quizView" class="hidden grid grid-cols-12 gap-8 h-[calc(100vh-280px)]">
             <!-- Camera Pane -->
-            <div class="camera-section glass-panel">
-                <div class="section-header">
-                    <h2>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
-                            </path>
-                            <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
-                        Live Feed
-                    </h2>
-                    <button class="btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.8rem;"
-                        onclick="endQuiz()">Abort</button>
+            <div class="col-span-12 lg:col-span-7 surface_glass rounded-3xl overflow-hidden flex flex-col glow-indigo">
+                <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-indigo-400">videocam</span>
+                        <h3 class="text-xl font-bold text-white">Live Feed</h3>
+                    </div>
+                    <button onclick="endQuiz()" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500/20 transition-all">Abort Quiz</button>
                 </div>
-                <div class="video-container">
-                    <img src="{{ url_for('video_feed') }}" alt="Camera Feed" class="video-feed" id="liveCamera">
+                <div class="flex-1 bg-black relative flex items-center justify-center">
+                    <img src="{{ url_for('video_feed') }}" alt="Camera Feed" class="max-w-full max-height-full object-contain">
                 </div>
             </div>
 
             <!-- Quiz Status Pane -->
-            <div class="quiz-panel glass-panel" style="position: relative;">
-                <div class="section-header">
-                    <h2>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        Evaluation
-                    </h2>
+            <div class="col-span-12 lg:col-span-5 surface_glass rounded-3xl overflow-hidden flex flex-col glow-indigo relative">
+                <div class="p-6 border-b border-white/10 flex items-center gap-3 bg-white/5">
+                    <span class="material-symbols-outlined text-purple-400">analytics</span>
+                    <h3 class="text-xl font-bold text-white">Evaluation</h3>
                 </div>
-                <div class="quiz-content">
-                    <div class="target-box" id="targetDisplay">
-                        <span class="target-label">Please Sign</span>
-                        <div class="target-value" id="quizTarget">-</div>
-
-                        <div style="width: 100%;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
-                                <span
-                                    style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Detection
-                                    Lock</span>
-                                <span id="lockPctText"
-                                    style="font-size: 0.75rem; color: var(--accent); font-weight: bold;">0%</span>
+                
+                <div class="flex-1 p-8 flex flex-col items-center justify-center bg-black/20 text-center">
+                    <div id="quizTimer" class="mb-6 bg-indigo-950/60 border border-white/10 px-6 py-2 rounded-2xl text-2xl font-black text-indigo-300">⏳ 15s</div>
+                    
+                    <div id="targetDisplay" class="surface_glass rounded-3xl p-10 w-full max-w-[350px] flex flex-col items-center relative glow-indigo">
+                        <div id="quizFeedback" class="feedback-text"></div>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Please Sign</span>
+                        <div id="quizTarget" class="text-7xl font-black text-white mb-8">-</div>
+                        
+                        <div class="w-full space-y-2">
+                            <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
+                                <span>Detection Lock</span>
+                                <span id="lockPctText" class="text-indigo-400">0%</span>
                             </div>
-                            <div class="progress-container">
-                                <div class="progress-bar" id="lockProgress"></div>
+                            <div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div id="lockProgress" class="h-full bg-green-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-300" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="quiz-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">Progress</span>
-                            <span class="stat-value" id="progressStat">0 / 0</span>
+                    <div class="w-full grid grid-cols-2 gap-8 mt-12 pt-8 border-t border-white/10">
+                        <div class="text-left">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Progress</span>
+                            <span id="progressStat" class="text-2xl font-bold text-white">0 / 0</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Accuracy Hints</span>
-                            <span class="stat-value" style="color: var(--primary-light);" id="currentPredStat">-</span>
+                        <div class="text-right">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Hints</span>
+                            <span id="currentPredStat" class="text-2xl font-bold text-indigo-400">-</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Complete View Overlay -->
-                <div class="completion-overlay" id="completionOverlay">
-                    <div class="celebration-icon">🏆</div>
-                    <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Quiz Perfected!</h2>
-                    <p style="color: var(--text-muted); margin-bottom: 2rem;">You successfully signed <span
-                            id="finalScore" style="color: #fff; font-weight: bold;">0</span> items.</p>
-                    <button class="btn-primary" onclick="endQuiz()">Return to Setup</button>
+                <!-- Completion Overlay -->
+                <div id="completionOverlay" class="absolute inset-0 bg-indigo-950/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center opacity-0 pointer-events-none transition-opacity duration-500">
+                    <div class="celebration-icon text-7xl mb-6">🎉</div>
+                    <div class="bg-indigo-600 text-white px-6 py-1.5 rounded-full text-xs font-bold mb-4 shadow-lg uppercase tracking-widest">Congratulations!</div>
+                    <h2 class="text-3xl font-black text-white mb-8">Quiz Completed</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4 w-full max-w-sm mb-10 text-left">
+                        <div class="surface_glass p-4 rounded-2xl">
+                            <span class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Score</span>
+                            <span id="reportScore" class="text-xl font-bold text-white">0%</span>
+                        </div>
+                        <div class="surface_glass p-4 rounded-2xl">
+                            <span class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Correct</span>
+                            <span id="reportCorrect" class="text-xl font-bold text-green-400">0</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full max-w-sm flex gap-4">
+                        <button onclick="endQuiz()" class="flex-1 py-3 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold hover:bg-white/10 transition-all">Try Again</button>
+                        <button onclick="window.location.href='{{ url_for('index') }}'" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-500 transition-all">Dashboard</button>
+                    </div>
                 </div>
             </div>
         </div>
+    </main>
 
-    </div>
-
-    <!-- Logic -->
     <script>
+        // --- QUIZ LOGIC ---
         let availableLabels = [];
-        let selectedQuizStr = [];
-        let activeQuizQueue = [];
-        let currentTarget = "";
-
-        let detectionMatches = 0;
-        const MATCHES_NEEDED = 6; // approx 1.2 seconds of holding the sign
-        let pollInterval = null;
-
-        const setupView = document.getElementById('setupView');
-        const quizView = document.getElementById('quizView');
-
-        // Fetch labels upon loading
-        window.addEventListener('DOMContentLoaded', fetchLabels);
+        let selectedItems = [];
+        let quizQueue = [];
+        let currentIndex = 0;
+        let correctCount = 0;
+        let isQuizRunning = false;
+        let currentTimer = 15;
+        let timerInterval = null;
+        let lockPct = 0;
+        let lockTarget = 100;
+        let requiredLockTicks = 5; 
+        let currentLockTicks = 0;
 
         async function fetchLabels() {
             const mode = document.getElementById('modeSelect').value;
-            try {
-                const res = await fetch(`/get_labels?mode=${mode}`);
-                const data = await res.json();
-                if (data.labels) {
-                    availableLabels = data.labels;
-                    renderCheckboxes();
-                }
-            } catch (err) {
-                console.error("Failed fetching labels:", err);
-            }
-        }
-
-        function renderCheckboxes() {
             const grid = document.getElementById('itemsGrid');
-            grid.innerHTML = "";
-            availableLabels.forEach(label => {
-                const checked = selectedQuizStr.includes(label) ? "checked" : "";
-                grid.innerHTML += `
-                    <label class="item-label">
-                        <input type="checkbox" value="${label}" onchange="updateSelection()" ${checked}>
-                        <div class="item-tile">${label}</div>
-                    </label>
-                `;
-            });
-            updateSelection();
+            grid.innerHTML = '<p class="col-span-full text-center text-slate-500 italic">Loading dictionary...</p>';
+            try {
+                const res = await fetch('/get_labels?mode=' + mode);
+                const data = await res.json();
+                availableLabels = data.labels || [];
+                renderGrid();
+                updateSelection();
+            } catch(e) { console.error("Error fetching labels"); }
         }
 
-        function selectAll(force) {
-            const checkboxes = document.querySelectorAll('.item-label input');
-            checkboxes.forEach(cb => cb.checked = force);
+        function renderGrid() {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = availableLabels.map(label => `
+                <label class="relative group cursor-pointer">
+                    <input type="checkbox" class="hidden" value="${label}" onchange="toggleSelection(this)">
+                    <div class="item-tile group-hover:border-indigo-500/50 group-hover:text-white transition-all">
+                        ${label}
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        function toggleSelection(cb) {
+            const label = cb.value;
+            if(cb.checked) { if(!selectedItems.includes(label)) selectedItems.push(label); }
+            else { selectedItems = selectedItems.filter(i => i !== label); }
             updateSelection();
         }
 
         function updateSelection() {
-            const checkboxes = document.querySelectorAll('.item-label input:checked');
-            selectedQuizStr = Array.from(checkboxes).map(cb => cb.value);
-
-            const count = selectedQuizStr.length;
-            document.getElementById('selectionCount').textContent = `${count} selected`;
-            document.getElementById('startBtn').disabled = count === 0;
+            document.getElementById('selectionCount').textContent = `${selectedItems.length} selected`;
+            document.getElementById('startBtn').disabled = selectedItems.length === 0;
         }
 
-        // Shuffle array helper
-        function shuffleArray(array) {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
+        function selectAll(val) {
+            const cbs = document.querySelectorAll('#itemsGrid input[type="checkbox"]');
+            cbs.forEach(cb => {
+                cb.checked = val;
+                const label = cb.value;
+                if(val && !selectedItems.includes(label)) selectedItems.push(label);
+            });
+            if(!val) selectedItems = [];
+            updateSelection();
         }
 
         async function startQuiz() {
-            if (selectedQuizStr.length === 0) return;
-
-            // 1. Tell backend to switch mode if not already on it
+            // Force backend mode
             const mode = document.getElementById('modeSelect').value;
             await fetch('/switch_mode', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: mode })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({mode: mode})
             });
 
-            // 2. Setup quiz arrays
-            activeQuizQueue = shuffleArray(selectedQuizStr);
-            console.log("Quiz queue:", activeQuizQueue);
+            quizQueue = [...selectedItems].sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            correctCount = 0;
+            isQuizRunning = true;
 
-            // 3. UI Flip
-            setupView.style.display = "none";
-            quizView.style.display = "grid";
-            document.getElementById('completionOverlay').classList.remove('active');
-
-            // 4. Start polling
-            nextTarget();
-            pollInterval = setInterval(pollQuizPrediction, 200);
-        }
-
-        function nextTarget() {
-            if (activeQuizQueue.length === 0) {
-                showCompletion();
-                return;
-            }
-
-            currentTarget = activeQuizQueue.shift();
-            detectionMatches = 0;
-
-            document.getElementById('quizTarget').textContent = currentTarget;
-            document.getElementById('progressStat').textContent = `${selectedQuizStr.length - activeQuizQueue.length} / ${selectedQuizStr.length}`;
-            updateLockUI(0);
-        }
-
-        function updateLockUI(pct) {
-            document.getElementById('lockProgress').style.width = `${pct}%`;
-            document.getElementById('lockPctText').textContent = `${Math.floor(pct)}%`;
-        }
-
-        async function pollQuizPrediction() {
-            if (!currentTarget) return;
-
-            try {
-                const res = await fetch('/get_prediction');
-                const data = await res.json();
-
-                const pred = data.prediction || "";
-                const dynPred = data.dynamic_prediction || "";
-                
-                // Show either the dynamic prediction if it exists, otherwise static pred
-                const displayPred = dynPred || pred;
-                document.getElementById('currentPredStat').textContent = displayPred ? displayPred : "-";
-                
-                const targetBox = document.getElementById('targetDisplay');
-
-                if (pred.toUpperCase() === currentTarget.toUpperCase() || dynPred.toUpperCase() === currentTarget.toUpperCase()) {
-                    targetBox.style.borderColor = "var(--accent)";
-                    targetBox.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.4)";
-                    targetBox.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
-                    
-                    detectionMatches++;
-                    const pct = Math.min(100, (detectionMatches / MATCHES_NEEDED) * 100);
-                    updateLockUI(pct);
-
-                    if (detectionMatches >= MATCHES_NEEDED) {
-                        document.getElementById('lockProgress').style.background = "#fff";
-                        targetBox.style.transform = "scale(1.05)";
-                        setTimeout(() => {
-                            document.getElementById('lockProgress').style.background = "var(--accent)";
-                            targetBox.style.transform = "scale(1)";
-                            nextTarget();
-                        }, 400);
-                        currentTarget = null;
-                    }
-                } else {
-                    if (displayPred && displayPred !== "-" && displayPred.toUpperCase() !== "NO HAND DETECTED") {
-                        targetBox.style.borderColor = "var(--danger)";
-                        targetBox.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.4)";
-                        targetBox.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-                    } else {
-                        targetBox.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                        targetBox.style.boxShadow = "none";
-                        targetBox.style.backgroundColor = "transparent";
-                    }
-                    
-                    detectionMatches = Math.max(0, detectionMatches - 1);
-                    updateLockUI((detectionMatches / MATCHES_NEEDED) * 100);
-                }
-            } catch (e) { console.error("Poll fail", e); }
-        }
-
-        function showCompletion() {
-            clearInterval(pollInterval);
-            document.getElementById('finalScore').textContent = selectedQuizStr.length;
-            document.getElementById('completionOverlay').classList.add('active');
+            document.getElementById('setupView').classList.add('hidden');
+            document.getElementById('quizView').classList.remove('hidden');
+            nextQuestion();
         }
 
         function endQuiz() {
-            clearInterval(pollInterval);
-            quizView.style.display = "none";
-            setupView.style.display = "block";
-            currentTarget = "";
-            activeQuizQueue = [];
+            isQuizRunning = false;
+            clearInterval(timerInterval);
+            document.getElementById('setupView').classList.remove('hidden');
+            document.getElementById('quizView').classList.add('hidden');
+            document.getElementById('completionOverlay').classList.add('opacity-0');
+            document.getElementById('completionOverlay').classList.add('pointer-events-none');
+            selectedItems = [];
+            renderGrid();
+            updateSelection();
         }
+
+        function nextQuestion() {
+            if(currentIndex >= quizQueue.length) { finishQuiz(); return; }
+            
+            document.getElementById('quizTarget').textContent = quizQueue[currentIndex];
+            document.getElementById('progressStat').textContent = `${currentIndex + 1} / ${quizQueue.length}`;
+            
+            lockPct = 0;
+            currentLockTicks = 0;
+            updateLockUI();
+            
+            currentTimer = 15;
+            updateTimerUI();
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(handleTimer, 1000);
+        }
+
+        function handleTimer() {
+            currentTimer--;
+            updateTimerUI();
+            if(currentTimer <= 0) {
+                clearInterval(timerInterval);
+                showFeedback(false);
+                setTimeout(nextQuestion, 2000);
+                currentIndex++;
+            }
+        }
+
+        function updateTimerUI() {
+            const el = document.getElementById('quizTimer');
+            el.textContent = `⏳ ${currentTimer}s`;
+            el.style.color = currentTimer <= 5 ? '#f87171' : '#a5b4fc';
+        }
+
+        function updateLockUI() {
+            document.getElementById('lockProgress').style.width = `${lockPct}%`;
+            document.getElementById('lockPctText').textContent = `${Math.round(lockPct)}%`;
+        }
+
+        function showFeedback(success) {
+            const fb = document.getElementById('quizFeedback');
+            fb.textContent = success ? "CORRECT!" : "TIME UP!";
+            fb.style.color = success ? "#10b981" : "#ef4444";
+            fb.style.opacity = "1";
+            fb.style.top = "-60px";
+            setTimeout(() => {
+                fb.style.opacity = "0";
+                fb.style.top = "-40px";
+            }, 1500);
+        }
+
+        function finishQuiz() {
+            isQuizRunning = false;
+            clearInterval(timerInterval);
+            const overlay = document.getElementById('completionOverlay');
+            document.getElementById('reportCorrect').textContent = correctCount;
+            document.getElementById('reportScore').textContent = `${Math.round((correctCount / quizQueue.length) * 100)}%`;
+            overlay.classList.remove('opacity-0');
+            overlay.classList.remove('pointer-events-none');
+        }
+
+        // Poll predictions during quiz
+        setInterval(async () => {
+            if(!isQuizRunning) return;
+            try {
+                const res = await fetch('/get_prediction');
+                const data = await res.json();
+                const p = data.prediction;
+                document.getElementById('currentPredStat').textContent = p || "-";
+
+                if(p && p.toUpperCase() === quizQueue[currentIndex].toUpperCase()) {
+                    currentLockTicks++;
+                    lockPct = (currentLockTicks / requiredLockTicks) * 100;
+                    updateLockUI();
+                    
+                    if(currentLockTicks >= requiredLockTicks) {
+                        clearInterval(timerInterval);
+                        correctCount++;
+                        showFeedback(true);
+                        setTimeout(nextQuestion, 1500);
+                        currentIndex++;
+                    }
+                } else {
+                    currentLockTicks = Math.max(0, currentLockTicks - 0.5);
+                    lockPct = (currentLockTicks / requiredLockTicks) * 100;
+                    updateLockUI();
+                }
+            } catch(e) {}
+        }, 200);
+
+        window.addEventListener('DOMContentLoaded', fetchLabels);
     </script>
 </body>
-
 </html>

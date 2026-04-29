@@ -1,26 +1,44 @@
-    <nav class="navbar glass-panel">
-        <div class="navbar-brand">Bridge Sign</div>
-        <div class="navbar-menu">
-            <a href="{{ url_for('index') }}" class="navbar-item{% if request.endpoint == 'index' %} active{% endif %}">Dashboard</a>
-            <a href="{{ url_for('tutorial') }}" class="navbar-item{% if request.endpoint == 'tutorial' %} active{% endif %}">Tutorial</a>
-            <a href="{{ url_for('quiz') }}" class="navbar-item{% if request.endpoint == 'quiz' %} active{% endif %}">Quiz</a>
-            <a href="{{ url_for('text_to_sign') }}" class="navbar-item{% if request.endpoint == 'text_to_sign' %} active{% endif %}">Text-to-Sign</a>
-            <a href="{{ url_for('profile') }}" class="navbar-item{% if request.endpoint == 'profile' %} active{% endif %}">Profile</a>
-            <a href="{{ url_for('settings') }}" class="navbar-item{% if request.endpoint == 'settings' %} active{% endif %}">Settings</a>
-            {% if is_admin %}
-            <a href="{{ url_for('trainer') }}" class="navbar-item{% if request.endpoint == 'trainer' %} active{% endif %}">Trainer Module</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="navbar-item{% if request.endpoint == 'admin_dashboard' %} active{% endif %}">Admin Dashboard</a>
-            {% endif %}
+<!-- TopNavBar Component -->
+<nav class="fixed top-0 w-full h-20 bg-indigo-950/40 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] z-50">
+    <div class="flex justify-between items-center px-8 h-20 max-w-[1280px] mx-auto w-full">
+        <div class="flex items-center gap-8">
+            <!-- Hamburger Menu for Mobile -->
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <a href="{{ url_for('index') }}" class="text-2xl font-black tracking-tighter text-white drop-shadow-[0_0_8px_rgba(79,70,229,0.6)]">Bridge Sign</a>
+            
+            <div class="hidden md:flex items-center gap-6">
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'index' }}" href="{{ url_for('index') }}">Dashboard</a>
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'text_to_sign' }}" href="{{ url_for('text_to_sign') }}">Text-to-Sign</a>
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'quiz' }}" href="{{ url_for('quiz') }}">Quiz</a>
+                {% if is_admin %}
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint in ['admin_dashboard', 'admin_dictionary'] }}" href="{{ url_for('admin_dashboard') }}">Admin</a>
+                {% endif %}
+            </div>
         </div>
-        <div class="navbar-user">
-            <div class="user-avatar">{{ username[0].upper() if username else 'U' }}</div>
-            <span>{{ username }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 mr-4 text-xs font-semibold text-slate-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hidden sm:flex">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                System Online
+            </div>
+            
+            <div class="flex items-center gap-3 bg-white/5 pl-4 pr-1 py-1 rounded-full border border-white/10">
+                <span class="text-xs font-bold text-slate-300 hidden sm:inline">{{ username if username else 'User' }}</span>
+                <div class="w-8 h-8 rounded-full border border-indigo-500/30 overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs">
+                    {{ username[0].upper() if username else 'U' }}
+                </div>
+            </div>
         </div>
-    </nav>
+    </div>
+</nav>
+
 {% if latest_model_meta is defined and latest_model_meta %}
-<div class="version-strip" style="display:flex;flex-wrap:wrap;gap:14px;padding:6px 20px;background:transparent;color:#ffffff;font-size:0.85em;">
-    <span><strong>Dynamic:</strong> v{{ latest_model_meta.dynamic.version }}{% if latest_model_meta.dynamic.notes %} — {{ latest_model_meta.dynamic.notes }}{% endif %}</span>
-    <span><strong>Spelling:</strong> v{{ latest_model_meta.spelling.version }}{% if latest_model_meta.spelling.notes %} — {{ latest_model_meta.spelling.notes }}{% endif %}</span>
+<div class="fixed top-20 w-full z-40 bg-transparent flex justify-center pointer-events-none">
+    <div class="bg-indigo-950/60 backdrop-blur-md px-6 py-1.5 rounded-b-2xl border-x border-b border-white/10 flex gap-6 text-[10px] font-bold tracking-widest text-indigo-300 pointer-events-auto shadow-xl">
+        <span class="flex items-center gap-2 uppercase"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Dynamic: v{{ latest_model_meta.dynamic.version }}</span>
+        <span class="flex items-center gap-2 uppercase"><span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Spelling: v{{ latest_model_meta.spelling.version }}</span>
+    </div>
 </div>
 {% endif %}

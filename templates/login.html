@@ -1,292 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Bridge Sign</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Login | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 100%);
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --text-main: #f8fafc;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-main);
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Animated Background Orbs */
-        .bg-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            animation: float 20s infinite ease-in-out;
-            opacity: 0.6;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: #4f46e5;
-            top: -10%;
-            left: -10%;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: #2563eb;
-            bottom: -20%;
-            right: -10%;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-        }
-
-        .auth-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: var(--glass-shadow);
-            width: 100%;
-            max-width: 400px;
-            padding: 3rem 2.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            position: relative;
-            z-index: 10;
-        }
-
-        .auth-header {
-            text-align: center;
-        }
-
-        .auth-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        .auth-header p {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.95rem;
-        }
-
-        .alert {
-            padding: 0.8rem 1rem;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-        }
-
-        .alert-success {
-            color: #34d399;
-            border-color: rgba(52, 211, 153, 0.3);
-        }
-
-        .alert-error {
-            color: #f87171;
-            border-color: rgba(248, 113, 113, 0.3);
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .form-group label {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.9);
-            padding-left: 0.2rem;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .form-input {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.9rem 1.2rem;
-            border-radius: 12px;
-            color: #fff;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-
-        .form-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            background: rgba(0, 0, 0, 0.3);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 1.2rem;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .toggle-password:hover {
-            color: #fff;
-        }
-
-        .btn-submit {
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            padding: 1rem;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 0.5rem;
-            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
-        }
-
-        .btn-submit:hover {
-            background: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
-        }
-
-        .auth-footer {
-            text-align: center;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 1rem;
-        }
-
-        .auth-footer a {
-            color: #a78bfa;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
-        }
-
-        .auth-footer a:hover {
-            color: #c4b5fd;
-            text-decoration: underline;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
 </head>
+<body class="bg-background text-on-surface flex items-center justify-center min-h-screen p-6 relative overflow-hidden">
+    <!-- Background Decor -->
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full z-0"></div>
 
-<body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-
-    <div class="auth-card">
-        <div class="auth-header">
-            <h1>Bridge Sign</h1>
-            <p>Welcome back</p>
+    <div class="w-full max-w-md relative z-10">
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 mb-4">
+                <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <span class="material-symbols-outlined text-white text-3xl">gesture</span>
+                </div>
+                <span class="text-3xl font-black text-white tracking-tighter">Bridge Sign</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white">Welcome back</h1>
+            <p class="text-slate-400 mt-2">Sign in to continue your learning journey.</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
+        <div class="mb-6 p-4 rounded-2xl border {{ 'bg-green-500/10 border-green-500/20 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/20 text-red-400' }}">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-sm">{{ 'check_circle' if category == 'success' else 'error' }}</span>
+                <span class="font-bold text-xs">{{ message }}</span>
+            </div>
+        </div>
         {% endfor %}
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}" style="display: flex; flex-direction: column; gap: 1.2rem;">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" class="form-input" placeholder="Enter username"
-                    required autofocus>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <div class="input-wrapper">
-                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter password"
-                        required>
-                    <button type="button" class="toggle-password" onclick="togglePassword()">Show</button>
+        <div class="surface_glass rounded-3xl p-8 glow-indigo border border-white/10">
+            <form method="POST" action="{{ url_for('login') }}" class="space-y-6">
+                <div class="space-y-2">
+                    <label for="username" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">person</span>
+                        <input type="text" id="username" name="username" required autofocus class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Enter your username">
+                    </div>
                 </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center px-1">
+                        <label for="password" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Password</label>
+                        <a href="{{ url_for('forgot_password') }}" class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest">Forgot?</a>
+                    </div>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">lock</span>
+                        <input type="password" id="password" name="password" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Enter your password">
+                        <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                            <span id="passwordIcon" class="material-symbols-outlined text-xl">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
+                    Sign In
+                    <span class="material-symbols-outlined text-xl">login</span>
+                </button>
+            </form>
+
+            <div class="mt-8 pt-8 border-t border-white/5 text-center">
+                <p class="text-sm text-slate-500">
+                    New to Bridge? 
+                    <a href="{{ url_for('register') }}" class="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">Create an account</a>
+                </p>
             </div>
+        </div>
 
-            <button type="submit" class="btn-submit">Sign In</button>
-        </form>
-
-        <div class="auth-footer">
-            New to Bridge? <a href="{{ url_for('register') }}">Create an account</a>
+        <div class="mt-8 text-center">
+            <p class="text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em]">© 2026 Bridge Sign by Nur Alya Batrisyia</p>
         </div>
     </div>
 
     <script>
         function togglePassword() {
             const pwd = document.getElementById('password');
-            const btn = document.querySelector('.toggle-password');
+            const icon = document.getElementById('passwordIcon');
             if (pwd.type === 'password') {
                 pwd.type = 'text';
-                btn.textContent = 'Hide';
+                icon.textContent = 'visibility_off';
             } else {
                 pwd.type = 'password';
-                btn.textContent = 'Show';
+                icon.textContent = 'visibility';
             }
         }
     </script>
 </body>
-
 </html>
