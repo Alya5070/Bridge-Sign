@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial Complete | Bridge Sign</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern_ui.css') }}">
+</head>
+<body class="bg-background text-on-surface h-screen flex items-center justify-center overflow-hidden">
+    <!-- Confetti / Background effect optional -->
+    <div class="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-purple-900/20 z-0"></div>
+
+    <main class="relative z-10 w-full max-w-lg mx-auto p-6">
+        <div class="surface_glass rounded-3xl p-10 text-center border border-white/10 shadow-2xl glow-indigo">
+            <div class="w-24 h-24 mx-auto bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center mb-8 shadow-lg shadow-indigo-500/30">
+                <span class="material-symbols-outlined text-5xl text-white">emoji_events</span>
+            </div>
+            
+            <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 mb-4 tracking-tight">
+                Congratulations!
+            </h1>
+            
+            <p class="text-xl text-slate-300 mb-2">
+                You finished the tutorial.
+            </p>
+            <p class="text-slate-400 mb-10 text-sm">
+                You are now ready to start using Bridge Sign to communicate seamlessly.
+            </p>
+            
+            <button onclick="finishTutorial()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2">
+                Go to Dashboard
+                <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        async function finishTutorial() {
+            try {
+                const response = await fetch('/complete_tutorial', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) { window.location.href = "{{ url_for('index') }}"; }
+            } catch (error) { console.error('Error completing tutorial:', error); }
+        }
+    </script>
+</body>
+</html>

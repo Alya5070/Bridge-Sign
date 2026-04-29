@@ -988,6 +988,18 @@ def refresh_cameras():
 @app.route('/tutorial')
 @login_required
 def tutorial():
+    user = db.session.get(User, session['user_id'])
+    
+    if user is None:
+        session.clear()
+        flash('Session expired. Please login again.', 'error')
+        return redirect(url_for('login'))
+
+    return render_template('tutorial_selection.html', username=session['username'], is_admin=user.is_admin)
+
+@app.route('/tutorial/learn/<level>')
+@login_required
+def tutorial_learn(level):
     global camera_active, current_camera_index
     user = db.session.get(User, session['user_id'])
     
@@ -998,7 +1010,28 @@ def tutorial():
 
     camera_active = user.camera_enabled
     current_camera_index = user.camera_index
-    return render_template('tutorial.html', username=session['username'], camera_active=camera_active, is_admin=user.is_admin)
+    
+    # Define sequences based on level
+    if level == 'basics':
+        sequence = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    elif level == 'intermediate':
+        sequence = ["MAKAN", "SAYA SAYANG AWAK"]
+    elif level == 'advanced':
+        sequence = ["AKU MAHU MAKAN"]
+    else:
+        return redirect(url_for('tutorial'))
+
+    return render_template('tutorial_learning.html', 
+                           username=session['username'], 
+                           camera_active=camera_active, 
+                           is_admin=user.is_admin,
+                           level=level,
+                           sequence=sequence)
+
+@app.route('/tutorial/success')
+@login_required
+def tutorial_success():
+    return render_template('tutorial_complete.html')
 
 
 @app.route('/quiz')
