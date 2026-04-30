@@ -148,6 +148,7 @@
                                     <div class="flex justify-end gap-3">
                                         {% if u.username != 'Admin' and u.id != session.get('user_id') %}
                                             <form method="POST" class="m-0">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="hidden" name="action" value="toggle_admin">
                                                 <input type="hidden" name="user_id" value="{{ u.id }}">
                                                 <button type="submit" class="p-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10" title="{{ 'Demote to User' if u.is_admin else 'Promote to Admin' }}">
@@ -155,6 +156,7 @@
                                                 </button>
                                             </form>
                                             <form method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete user {{ u.username }}?');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="hidden" name="action" value="delete_user">
                                                 <input type="hidden" name="user_id" value="{{ u.id }}">
                                                 <button type="submit" class="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/10">
@@ -182,6 +184,7 @@
                     <h3 class="text-2xl font-black text-white tracking-tight">{{ _t('add_new_user') }}</h3>
                 </div>
                 <form method="POST" class="space-y-6 flex-1 flex flex-col">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="add_user">
                     <div class="space-y-2">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('username') }}</label>

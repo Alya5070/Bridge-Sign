@@ -17,6 +17,14 @@ from collections import deque
 import itertools
 import time
 from tensorflow.keras.models import load_model as keras_load_model
+from dotenv import load_dotenv
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
+from flask_wtf.csrf import CSRFProtect
+
+# Load environment variables
+load_dotenv()
 
 # --- MACHINE LEARNING & TRAINER IMPORTS ---
 import mediapipe as mp
@@ -28,9 +36,66 @@ from tensorflow.keras.utils import to_categorical
 
 app = Flask(__name__)
 start_time = time.time()
-app.config['SECRET_KEY'] = 'your-secret-key-here-change-in-production'
+
+# Security Configurations
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+# Security Headers & HSTS
+# Note: In production with SSL, set force_https=True
+talisman = Talisman(
+    app,
+    content_security_policy={
+        'default-src': '\'self\'',
+        'script-src': [
+            '\'self\'',
+            '\'unsafe-inline\'',
+            '\'unsafe-eval\'',
+            'blob:',
+            'https://cdn.tailwindcss.com',
+            'https://cdn.jsdelivr.net',
+            'https://code.jquery.com',
+            'https://www.youtube.com',
+            'https://s.ytimg.com'
+        ],
+        'style-src': [
+            '\'self\'',
+            '\'unsafe-inline\'',
+            'blob:',
+            'https://fonts.googleapis.com',
+            'https://cdn.jsdelivr.net',
+            'https://cdn.tailwindcss.com'
+        ],
+        'font-src': [
+            '\'self\'',
+            'https://fonts.gstatic.com',
+            'https://fonts.googleapis.com'
+        ],
+        'img-src': [
+            '\'self\'',
+            'data:',
+            'https://i.ytimg.com',
+            'https://lh3.googleusercontent.com'
+        ],
+        'frame-src': [
+            '\'self\'',
+            'https://www.youtube.com'
+        ]
+    },
+    force_https=False # Set to True in production with SSL
+)
+
+# CSRF Protection
+csrf = CSRFProtect(app)
+
+# Rate Limiting
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 @app.after_request
 def add_header(response):
@@ -724,6 +789,7 @@ def home():
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def register():
     if 'user_id' in session:
         return redirect(url_for('index'))
@@ -777,6 +843,7 @@ def register():
 
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
+@limiter.limit("3 per minute")
 def forgot_password():
     if 'user_id' in session:
         return redirect(url_for('index'))
@@ -831,6 +898,7 @@ def forgot_password():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def login():
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
@@ -2023,4 +2091,5 @@ def recently_added():
 load_model(active_mode)
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    is_debug = os.getenv('DEBUG', 'True').lower() == 'true'
+    app.run(debug=is_debug, threaded=True)

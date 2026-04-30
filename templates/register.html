@@ -57,6 +57,7 @@
 
         <div class="surface_glass rounded-3xl p-8 glow-indigo border border-white/10 auth-card-scroll max-h-[75vh] overflow-y-auto">
             <form method="POST" action="{{ url_for('register') }}" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="space-y-2">
                     <label for="username" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('username') }}</label>
                     <div class="relative">

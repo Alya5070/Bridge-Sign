@@ -44,3 +44,30 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+    // Global CSRF Protection for fetch()
+    const originalFetch = window.fetch;
+    window.fetch = function() {
+        let args = Array.from(arguments);
+        let config = args[1] || {};
+        
+        // Only add CSRF token for state-changing methods
+        const method = (config.method || 'GET').toUpperCase();
+        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+            config.headers = config.headers || {};
+            // Try to get token from a meta tag or a hidden input
+            let token = "{{ csrf_token() }}";
+            if (token) {
+                if (config.headers instanceof Headers) {
+                    config.headers.set('X-CSRFToken', token);
+                } else {
+                    config.headers['X-CSRFToken'] = token;
+                }
+            }
+        }
+        
+        args[1] = config;
+        return originalFetch.apply(this, args);
+    };
+</script>

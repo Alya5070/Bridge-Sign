@@ -169,6 +169,7 @@
                             <span class="material-symbols-outlined text-lg">school</span> {{ _t('nav_tutorial') }}
                         </button>
                         <form method="POST" action="{{ url_for('settings') }}" class="m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="toggle_camera">
                             <button type="submit" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 {{ 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20' if camera_active else 'bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20' }}">
                                 <span class="material-symbols-outlined text-lg">{{ 'videocam_off' if camera_active else 'videocam' }}</span>
