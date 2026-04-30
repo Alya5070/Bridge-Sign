@@ -6,78 +6,84 @@
                 <span class="material-symbols-outlined text-white text-sm">navigation</span>
             </div>
             <div class="sidebar-header-text">
-                <h2 class="text-sm font-bold text-white leading-none">Navigation</h2>
-                <p class="text-[10px] uppercase tracking-widest text-indigo-400 font-semibold mt-1">Main Menu</p>
+                <h2 class="text-sm font-bold text-white leading-none">{{ _t('nav_navigation') }}</h2>
+                <p class="text-[10px] uppercase tracking-widest text-indigo-400 font-semibold mt-1">{{ _t('nav_menu') }}</p>
             </div>
         </div>
         
         <nav class="space-y-1">
             <a href="{{ url_for('index') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'index' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined">dashboard</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Dashboard</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_dashboard') }}</span>
             </a>
             
             <a href="{{ url_for('tutorial') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'tutorial' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined">school</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Tutorial</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_tutorial') }}</span>
             </a>
             
             <a href="{{ url_for('quiz') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'quiz' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined">quiz</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Quiz</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_quiz') }}</span>
             </a>
             
             <a href="{{ url_for('text_to_sign') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'text_to_sign' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined">translate</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Text-to-Sign</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_text_to_sign') }}</span>
             </a>
             
             <div class="pt-6 pb-2 px-2 sidebar-header-text">
-                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Account</p>
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{{ _t('nav_account') }}</p>
             </div>
             
             <a href="{{ url_for('profile') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'profile' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined">person</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Profile</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_profile') }}</span>
             </a>
             
             <a href="{{ url_for('settings') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'settings' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined">settings</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Settings</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_settings') }}</span>
             </a>
 
             {% if is_admin %}
             <div class="pt-6 pb-2 px-2 sidebar-header-text">
-                <p class="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">Admin Portal</p>
+                <p class="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">{{ _t('nav_admin_portal') }}</p>
             </div>
             
             <a href="{{ url_for('admin_dashboard') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'admin_dashboard' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined text-indigo-400">shield_person</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Admin Overview</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_admin_overview') }}</span>
             </a>
             
             <a href="{{ url_for('admin_dictionary') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'admin_dictionary' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined text-indigo-400">menu_book</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Dictionary</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_dictionary') }}</span>
             </a>
             
             <a href="{{ url_for('trainer') }}" class="sidebar-item flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 {{ 'bg-indigo-500/20 text-white border-l-4 border-indigo-500' if request.endpoint == 'trainer' else 'text-slate-400 hover:bg-white/5 hover:text-white' }}">
                 <span class="material-symbols-outlined text-indigo-400">exercise</span>
-                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">Trainer Module</span>
+                <span class="sidebar-label text-xs uppercase tracking-widest font-semibold">{{ _t('nav_trainer') }}</span>
             </a>
             
             {% endif %}
         </nav>
     </div>
     
-    <div class="p-4 border-t border-white/5 space-y-2">
+    <div class="p-4 border-t border-white/5 space-y-4">
+        <!-- Language Switcher -->
+        <div class="sidebar-lang-switcher flex items-center justify-between bg-white/5 rounded-xl border border-white/10 p-1">
+            <a href="{{ url_for('set_language', lang='en') }}" class="flex-1 text-center py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-indigo-600 text-white shadow-lg' if current_lang == 'en' else 'text-slate-500 hover:text-slate-300' }}">EN</a>
+            <a href="{{ url_for('set_language', lang='ms') }}" class="flex-1 text-center py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-indigo-600 text-white shadow-lg' if current_lang == 'ms' else 'text-slate-500 hover:text-slate-300' }}">BM</a>
+        </div>
+
         <button onclick="toggleSidebarCollapse()" class="w-full flex items-center gap-3 text-slate-500 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5">
             <span id="collapse-icon" class="material-symbols-outlined transition-transform duration-300">keyboard_double_arrow_left</span>
-            <span class="sidebar-label text-[10px] uppercase tracking-widest font-bold">Collapse Sidebar</span>
+            <span class="sidebar-label text-[10px] uppercase tracking-widest font-bold">{{ _t('nav_collapse') }}</span>
         </button>
         <a href="{{ url_for('logout') }}" class="flex items-center gap-3 text-red-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-red-500/10">
             <span class="material-symbols-outlined">logout</span>
-            <span class="sidebar-label text-[10px] uppercase tracking-widest font-bold">Sign Out</span>
+            <span class="sidebar-label text-[10px] uppercase tracking-widest font-bold">{{ _t('nav_sign_out') }}</span>
         </a>
     </div>
 </aside>
@@ -92,7 +98,7 @@
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('main-content');
         const collapseIcon = document.getElementById('collapse-icon');
-        const labels = document.querySelectorAll('.sidebar-label, .sidebar-header-text');
+        const labels = document.querySelectorAll('.sidebar-label, .sidebar-header-text, .sidebar-lang-switcher');
         
         const isCollapsed = sidebar.classList.toggle('w-20');
         sidebar.classList.toggle('w-64');
@@ -120,7 +126,7 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const collapseIcon = document.getElementById('collapse-icon');
-            const labels = document.querySelectorAll('.sidebar-label, .sidebar-header-text');
+            const labels = document.querySelectorAll('.sidebar-label, .sidebar-header-text, .sidebar-lang-switcher');
             
             sidebar.classList.remove('w-64');
             sidebar.classList.add('w-20');

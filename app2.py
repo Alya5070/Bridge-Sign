@@ -43,6 +43,29 @@ def add_header(response):
     response.headers['Expires'] = '-1'
     return response
 
+# --- LOCALIZATION SUPPORT ---
+translations_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'translations.json')
+translations = {}
+if os.path.exists(translations_path):
+    with open(translations_path, 'r', encoding='utf-8') as f:
+        translations = json.load(f)
+
+@app.context_processor
+def inject_translations():
+    lang = session.get('lang', 'en')
+    
+    def _t(key):
+        # Retrieve translation or return key if missing
+        return translations.get(lang, {}).get(key, key)
+    
+    return dict(_t=_t, current_lang=lang, translations=translations)
+
+@app.route('/set_language/<lang>')
+def set_language(lang):
+    if lang in ['en', 'ms']:
+        session['lang'] = lang
+    return redirect(request.referrer or url_for('index'))
+
 # Configure SQLite Database (No external server required)
 base_dir = os.path.abspath(os.path.dirname(__file__))
 instance_dir = os.path.join(base_dir, 'instance')

@@ -22,8 +22,8 @@
     <!-- Main Content -->
     <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1280px] transition-all duration-300">
         <div class="mb-10">
-            <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">Admin Dashboard</h1>
-            <p class="text-lg text-slate-400">Manage platform users, monitor system health, and review sign vocabulary requests.</p>
+            <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">{{ _t('admin_dash_title') }}</h1>
+            <p class="text-lg text-slate-400">{{ _t('admin_dash_subtitle') }}</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -31,7 +31,7 @@
                 {% for category, message in messages %}
                     <div class="mb-6 p-4 rounded-2xl border {% if category == 'success' %}bg-green-500/10 border-green-500/20 text-green-400{% else %}bg-red-500/10 border-red-500/20 text-red-400{% endif %} flex items-center gap-3">
                         <span class="material-symbols-outlined">{% if category == 'success' %}check_circle{% else %}error{% endif %}</span>
-                        <span class="font-bold text-xs">{{ message }}</span>
+                        <span class="font-bold text-xs">{{ _t(message) }}</span>
                     </div>
                 {% endfor %}
             {% endif %}
@@ -48,7 +48,7 @@
                         </div>
                         <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest px-2 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">Active</span>
                     </div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Users</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{{ _t('total_users') }}</p>
                     <h3 class="text-4xl font-black text-white mt-1">{{ users | length }}</h3>
                 </div>
                 <div class="mt-6 pt-4 border-t border-white/5">
@@ -66,7 +66,7 @@
                         </div>
                         <span class="text-[10px] font-bold text-purple-400 uppercase tracking-widest px-2 py-1 bg-purple-500/10 rounded-full border border-purple-500/20">Loaded</span>
                     </div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Words in Model</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{{ _t('words_in_model') }}</p>
                     <h3 class="text-4xl font-black text-white mt-1">{{ total_words }}</h3>
                 </div>
                 <div class="mt-6 pt-4 border-t border-white/5">
@@ -83,14 +83,14 @@
                             <span class="material-symbols-outlined text-indigo-400 text-3xl">bolt</span>
                         </div>
                         <div>
-                            <p class="text-[10px] font-bold text-slate-500 uppercase leading-none tracking-widest">System Load</p>
-                            <h4 id="card-system-status" class="text-white font-black text-xl mt-1">Optimal</h4>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase leading-none tracking-widest">{{ _t('system_load') }}</p>
+                            <h4 id="card-system-status" class="text-white font-black text-xl mt-1">{{ _t('optimal') }}</h4>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-400 leading-relaxed">Recognition nodes operating within nominal latency parameters.</p>
+                    <p class="text-xs text-slate-400 leading-relaxed">{{ _t('load_desc') }}</p>
                 </div>
                 <div class="mt-6">
-                    <button onclick="openHealthModal()" class="w-full py-3 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 rounded-2xl text-indigo-300 text-[10px] font-bold uppercase tracking-widest transition-all">View Health Metrics</button>
+                    <button onclick="openHealthModal()" class="w-full py-3 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 rounded-2xl text-indigo-300 text-[10px] font-bold uppercase tracking-widest transition-all">{{ _t('view_health') }}</button>
                 </div>
             </div>
 
@@ -101,20 +101,20 @@
                         <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
                             <span class="material-symbols-outlined text-indigo-400">manage_accounts</span>
                         </div>
-                        <h3 class="text-2xl font-black text-white tracking-tight">User Management</h3>
+                        <h3 class="text-2xl font-black text-white tracking-tight">{{ _t('user_management') }}</h3>
                     </div>
                     <div class="relative w-full sm:w-64">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
-                        <input class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all" placeholder="Search users..." type="text"/>
+                        <input class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all" placeholder="{{ _t('search_users') }}" type="text"/>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="bg-indigo-500/5">
-                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">User Details</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Access Level</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest text-right">Actions</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{{ _t('user_details') }}</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{{ _t('access_level') }}</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-indigo-400 uppercase tracking-widest text-right">{{ _t('actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
@@ -135,12 +135,12 @@
                                     {% if u.is_admin %}
                                         <div class="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase rounded-full border border-indigo-500/20">
                                             <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
-                                            Administrator
+                                            {{ _t('administrator') }}
                                         </div>
                                     {% else %}
                                         <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/5 text-slate-500 text-[10px] font-bold uppercase rounded-full border border-white/10">
                                             <span class="w-1.5 h-1.5 bg-slate-500 rounded-full"></span>
-                                            Standard User
+                                            {{ _t('standard_user') }}
                                         </div>
                                     {% endif %}
                                 </td>
@@ -162,7 +162,7 @@
                                                 </button>
                                             </form>
                                         {% else %}
-                                            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic pr-4">Protected</span>
+                                            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest italic pr-4">{{ _t('protected') }}</span>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -179,17 +179,17 @@
                     <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                         <span class="material-symbols-outlined text-white text-2xl">person_add</span>
                     </div>
-                    <h3 class="text-2xl font-black text-white tracking-tight">Add New User</h3>
+                    <h3 class="text-2xl font-black text-white tracking-tight">{{ _t('add_new_user') }}</h3>
                 </div>
                 <form method="POST" class="space-y-6 flex-1 flex flex-col">
                     <input type="hidden" name="action" value="add_user">
                     <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
-                        <input name="new_username" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all placeholder:text-slate-700" placeholder="Enter username" type="text"/>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('username') }}</label>
+                        <input name="new_username" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all placeholder:text-slate-700" placeholder="{{ _t('enter_username') }}" type="text"/>
                     </div>
                     <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Initial Password</label>
-                        <input name="new_password" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all placeholder:text-slate-700" placeholder="Min. 6 characters" type="password"/>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('initial_password') }}</label>
+                        <input name="new_password" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-white transition-all placeholder:text-slate-700" placeholder="{{ _t('min_chars') }}" type="password"/>
                     </div>
                     <div class="flex items-center gap-4 p-4 bg-white/2 rounded-2xl border border-white/5">
                         <div class="relative flex items-center">
@@ -212,16 +212,16 @@
                     <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
                         <span class="material-symbols-outlined text-purple-400">new_releases</span>
                     </div>
-                    <h3 class="text-2xl font-black text-white tracking-tight">Pending Word Requests</h3>
+                    <h3 class="text-2xl font-black text-white tracking-tight">{{ _t('pending_requests') }}</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="bg-purple-500/5">
-                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">Sign Lexicon</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">Requested By</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">Submission Date</th>
-                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest text-right">Actions</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">{{ _t('sign_lexicon') }}</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">{{ _t('requested_by') }}</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest">{{ _t('submission_date') }}</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-purple-400 uppercase tracking-widest text-right">{{ _t('actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
@@ -240,8 +240,8 @@
                                     <td class="px-8 py-5 text-sm text-slate-500 font-mono">{{ req.timestamp.strftime('%d %b, %Y') }}</td>
                                     <td class="px-8 py-5 text-right">
                                         <div class="flex justify-end gap-3">
-                                            <button onclick="updateRequest({{ req.id }}, 'Added')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/10 active:scale-95">Approve</button>
-                                            <button onclick="updateRequest({{ req.id }}, 'Rejected')" class="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5 active:scale-95">Decline</button>
+                                            <button onclick="updateRequest({{ req.id }}, 'Added')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/10 active:scale-95">{{ _t('approve') }}</button>
+                                            <button onclick="updateRequest({{ req.id }}, 'Rejected')" class="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5 active:scale-95">{{ _t('decline') }}</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -250,7 +250,7 @@
                                 <tr>
                                     <td colspan="4" class="px-8 py-16 text-center">
                                         <span class="material-symbols-outlined text-6xl text-slate-700 mb-4 block">inbox</span>
-                                        <p class="text-slate-500 italic font-medium">No pending requests at this time. All clear!</p>
+                                        <p class="text-slate-500 italic font-medium">{{ _t('no_pending_requests') }}</p>
                                     </td>
                                 </tr>
                             {% endif %}
@@ -266,10 +266,10 @@
                         <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
                             <span class="material-symbols-outlined text-indigo-400">visibility</span>
                         </div>
-                        <h3 class="text-2xl font-black text-white tracking-tight">Recognized Vocabulary (Inference Model)</h3>
+                        <h3 class="text-2xl font-black text-white tracking-tight">{{ _t('recognized_vocabulary') }}</h3>
                     </div>
                     <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 py-2 bg-white/5 rounded-full border border-white/10">
-                        Total signs: {{ total_words }}
+                        {{ _t('total_signs') }}: {{ total_words }}
                     </div>
                 </div>
                 <div class="p-8">

@@ -28,17 +28,17 @@
 
     <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1400px] transition-all duration-300">
         <div class="mb-10">
-            <h1 class="text-4xl font-extrabold text-white mb-2">Text-to-Sign</h1>
-            <p class="text-lg text-slate-400">Convert phrases into sign language sequences instantly.</p>
+            <h1 class="text-4xl font-extrabold text-white mb-2">{{ _t('text_to_sign_title') }}</h1>
+            <p class="text-lg text-slate-400">{{ _t('text_to_sign_subtitle') }}</p>
         </div>
 
         <div class="surface_glass rounded-3xl p-10 glow-indigo mb-12 text-center">
-            <h2 class="text-3xl font-black text-white mb-4">Dynamic Translation</h2>
-            <p class="text-slate-400 mb-10 max-w-2xl mx-auto">Type a phrase below and we'll retrieve the corresponding sign language demonstrations from our library.</p>
+            <h2 class="text-3xl font-black text-white mb-4">{{ _t('dynamic_translation') }}</h2>
+            <p class="text-slate-400 mb-10 max-w-2xl mx-auto">{{ _t('dynamic_translation_desc') }}</p>
             
             <div class="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
                 <input type="text" id="phraseInput" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-2xl px-6 py-4 text-white text-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="e.g. Hello thank you please" onkeypress="handleEnter(event)">
-                <button onclick="fetchTranslations()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95">Translate</button>
+                <button onclick="fetchTranslations()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95">{{ _t('translate') }}</button>
             </div>
             <p id="system-feedback" class="mt-4 h-6 text-sm"></p>
         </div>
@@ -46,29 +46,29 @@
         <div class="mb-8 flex justify-between items-center">
             <h3 class="text-xl font-bold text-white flex items-center gap-3">
                 <span class="material-symbols-outlined text-indigo-400">playlist_play</span>
-                Sign Sequence
+                {{ _t('sign_sequence') }}
             </h3>
             <button id="btnPlayAll" class="hidden items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg transition-all active:scale-95" onclick="startPlayAll()">
-                <span class="material-symbols-outlined">play_circle</span> Play All
+                <span class="material-symbols-outlined">play_circle</span> {{ _t('play_all') }}
             </button>
         </div>
 
         <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div class="col-span-full py-20 text-center surface_glass rounded-3xl border-dashed border-2 border-white/5">
                 <span class="material-symbols-outlined text-6xl text-slate-700 mb-4">translate</span>
-                <p class="text-slate-500 italic">Your translated signs will appear here.</p>
+                <p class="text-slate-500 italic">{{ _t('missing_signs_empty') }}</p>
             </div>
         </div>
 
         <div class="mt-16 surface_glass rounded-3xl p-8 glow-indigo border-t-4 border-indigo-500">
             <div class="flex flex-col md:flex-row justify-between items-center gap-8">
                 <div class="text-center md:text-left">
-                    <h3 class="text-xl font-bold text-white mb-2">Missing a sign?</h3>
-                    <p class="text-slate-400 text-sm">Suggest a new word or phrase for our dictionary.</p>
+                    <h3 class="text-xl font-bold text-white mb-2">{{ _t('missing_sign_q') }}</h3>
+                    <p class="text-slate-400 text-sm">{{ _t('suggest_desc') }}</p>
                 </div>
                 <div class="flex gap-4 w-full md:w-auto max-w-md">
-                    <input type="text" id="suggestInput" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Word to suggest...">
-                    <button onclick="submitSuggestion()" class="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-6 py-2 rounded-xl font-bold text-xs hover:bg-indigo-500/30 transition-all">Suggest</button>
+                    <input type="text" id="suggestInput" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="{{ _t('word_to_suggest') }}">
+                    <button onclick="submitSuggestion()" class="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-6 py-2 rounded-xl font-bold text-xs hover:bg-indigo-500/30 transition-all">{{ _t('suggest') }}</button>
                 </div>
             </div>
             <p id="suggest-feedback" class="mt-4 text-[10px] text-center h-4"></p>
@@ -79,7 +79,7 @@
     <div id="playerModal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-[100] hidden items-center justify-center p-4">
         <div class="w-full max-w-4xl">
             <div class="flex justify-between items-center mb-6">
-                <h3 id="playerTitle" class="text-xl font-bold text-white">Playing...</h3>
+                <h3 id="playerTitle" class="text-xl font-bold text-white">{{ _t('playing') }}...</h3>
                 <button onclick="closePlayer()" class="text-white hover:text-red-400 transition-colors">
                     <span class="material-symbols-outlined text-4xl">close</span>
                 </button>
@@ -92,6 +92,9 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
+        const translations = {{ translations[current_lang]|tojson }};
+        function _t(key) { return translations[key] || key; }
+
         let ytPlayer;
         let playQueue = [];
         let currentPlayIndex = 0;
@@ -124,7 +127,7 @@
 
         function playVideoInQueue() {
             const item = playQueue[currentPlayIndex];
-            document.getElementById('playerTitle').textContent = `Playing ${currentPlayIndex + 1} of ${playQueue.length}: ${item.word}`;
+            document.getElementById('playerTitle').textContent = `${_t('playing')} ${currentPlayIndex + 1} of ${playQueue.length}: ${item.word}`;
             ytPlayer.loadVideoById(item.youtube_id);
         }
 
@@ -161,7 +164,7 @@
             const phrase = inputEle.value.trim();
             if (!phrase) { feedback.textContent = "Please enter a phrase."; return; }
 
-            feedback.textContent = "Translating...";
+            feedback.textContent = _t('translating');
             feedback.style.color = "#94a3b8";
             
             try {
@@ -190,15 +193,15 @@
                         `;
                     });
                     if (data.missing.length > 0) {
-                        feedback.textContent = `Missing: ${data.missing.join(', ')}`;
+                        feedback.textContent = `${_t('missing_label')}: ${data.missing.join(', ')}`;
                         feedback.style.color = "#fbbf24";
                     }
                 } else {
-                    grid.innerHTML = `<div class="col-span-full py-20 text-center surface_glass rounded-3xl border-dashed border-2 border-white/5"><p class="text-slate-500 italic">No signs found for these words.</p></div>`;
+                    grid.innerHTML = `<div class="col-span-full py-20 text-center surface_glass rounded-3xl border-dashed border-2 border-white/5"><p class="text-slate-500 italic">${_t('no_signs_found')}</p></div>`;
                     feedback.textContent = "";
                     document.getElementById('btnPlayAll').style.display = 'none';
                 }
-            } catch (e) { feedback.textContent = "Translation failed."; }
+            } catch (e) { feedback.textContent = _t('translation_failed'); }
         }
     </script>
 </body>

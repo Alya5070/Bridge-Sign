@@ -20,6 +20,12 @@
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full z-0"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full z-0"></div>
 
+    <!-- Language Switcher -->
+    <div class="fixed top-8 right-8 z-50 flex items-center gap-3 bg-white/5 backdrop-blur-md border border-white/10 p-1.5 rounded-2xl shadow-xl">
+        <a href="{{ url_for('set_language', lang='en') }}" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-indigo-600 text-white shadow-lg' if session.get('lang', 'en') == 'en' else 'text-slate-400 hover:text-white' }}">EN</a>
+        <a href="{{ url_for('set_language', lang='ms') }}" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {{ 'bg-indigo-600 text-white shadow-lg' if session.get('lang') == 'ms' else 'text-slate-400 hover:text-white' }}">BM</a>
+    </div>
+
     <div class="w-full max-w-md relative z-10">
         <div class="text-center mb-10">
             <div class="inline-flex items-center gap-2 mb-4">
@@ -28,8 +34,8 @@
                 </div>
                 <span class="text-3xl font-black text-white tracking-tighter">Bridge Sign</span>
             </div>
-            <h1 class="text-2xl font-bold text-white">Welcome back</h1>
-            <p class="text-slate-400 mt-2">Sign in to continue your learning journey.</p>
+            <h1 class="text-2xl font-bold text-white">{{ _t('login_welcome') }}</h1>
+            <p class="text-slate-400 mt-2">{{ _t('login_journey') }}</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -38,7 +44,7 @@
         <div class="mb-6 p-4 rounded-2xl border {{ 'bg-green-500/10 border-green-500/20 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/20 text-red-400' }}">
             <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined text-sm">{{ 'check_circle' if category == 'success' else 'error' }}</span>
-                <span class="font-bold text-xs">{{ message }}</span>
+                <span class="font-bold text-xs">{{ _t(message) }}</span>
             </div>
         </div>
         {% endfor %}
@@ -48,21 +54,21 @@
         <div class="surface_glass rounded-3xl p-8 glow-indigo border border-white/10">
             <form method="POST" action="{{ url_for('login') }}" class="space-y-6">
                 <div class="space-y-2">
-                    <label for="username" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
+                    <label for="username" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('username') }}</label>
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">person</span>
-                        <input type="text" id="username" name="username" required autofocus class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Enter your username">
+                        <input type="text" id="username" name="username" required autofocus class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="{{ _t('enter_username') }}">
                     </div>
                 </div>
 
                 <div class="space-y-2">
                     <div class="flex justify-between items-center px-1">
-                        <label for="password" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Password</label>
-                        <a href="{{ url_for('forgot_password') }}" class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest">Forgot?</a>
+                        <label for="password" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{{ _t('password') }}</label>
+                        <a href="{{ url_for('forgot_password') }}" class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest">{{ _t('forgot_pwd_q') }}</a>
                     </div>
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">lock</span>
-                        <input type="password" id="password" name="password" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="Enter your password">
+                        <input type="password" id="password" name="password" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" placeholder="{{ _t('enter_password') }}">
                         <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
                             <span id="passwordIcon" class="material-symbols-outlined text-xl">visibility</span>
                         </button>
@@ -70,15 +76,15 @@
                 </div>
 
                 <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
-                    Sign In
+                    {{ _t('sign_in') }}
                     <span class="material-symbols-outlined text-xl">login</span>
                 </button>
             </form>
 
             <div class="mt-8 pt-8 border-t border-white/5 text-center">
                 <p class="text-sm text-slate-500">
-                    New to Bridge? 
-                    <a href="{{ url_for('register') }}" class="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">Create an account</a>
+                    {{ _t('new_to_bridge') }} 
+                    <a href="{{ url_for('register') }}" class="text-indigo-400 font-bold hover:text-indigo-300 transition-colors">{{ _t('create_account') }}</a>
                 </p>
             </div>
         </div>

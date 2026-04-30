@@ -21,8 +21,8 @@
 
     <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1000px] transition-all duration-300 mx-auto">
         <div class="mb-10">
-            <h1 class="text-4xl font-extrabold text-white mb-2">System Settings</h1>
-            <p class="text-lg text-slate-400">Configure your hardware and visual preferences for the best experience.</p>
+            <h1 class="text-4xl font-extrabold text-white mb-2">{{ _t('settings_title') }}</h1>
+            <p class="text-lg text-slate-400">{{ _t('settings_subtitle') }}</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -31,7 +31,7 @@
         <div class="mb-6 p-4 rounded-2xl border {{ 'bg-green-500/10 border-green-500/20 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/20 text-red-400' }}">
             <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined">{{ 'check_circle' if category == 'success' else 'error' }}</span>
-                <span class="font-bold text-sm">{{ message }}</span>
+                <span class="font-bold text-sm">{{ _t(message) }}</span>
             </div>
         </div>
         {% endfor %}
@@ -43,9 +43,9 @@
             <div class="surface_glass rounded-3xl p-8 glow-indigo">
                 <div class="flex items-center gap-3 mb-6">
                     <span class="material-symbols-outlined text-indigo-400">videocam</span>
-                    <h2 class="text-2xl font-bold text-white">Camera Control</h2>
+                    <h2 class="text-2xl font-bold text-white">{{ _t('camera_control') }}</h2>
                 </div>
-                <p class="text-slate-400 mb-8">Toggle your video feed for real-time sign language detection. Keeping the camera disabled when not in use saves system resources.</p>
+                <p class="text-slate-400 mb-8">{{ _t('camera_control_desc') }}</p>
 
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div class="flex items-center gap-4">
@@ -53,21 +53,21 @@
                             <span class="material-symbols-outlined">sensors</span>
                         </div>
                         <div>
-                            <h3 class="text-white font-bold">Capture Status</h3>
-                            <p class="text-xs text-slate-500">System is currently {{ 'ready' if user.camera_enabled else 'standby' }}</p>
+                            <h3 class="text-white font-bold">{{ _t('capture_status') }}</h3>
+                            <p class="text-xs text-slate-500">{{ _t('system_ready') if user.camera_enabled else _t('system_standby_status') }}</p>
                         </div>
                     </div>
                     
                     <div class="flex items-center gap-6">
                         <span class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest {{ 'text-green-400' if user.camera_enabled else 'text-red-400' }}">
                             <span class="w-2 h-2 rounded-full {{ 'bg-green-500 animate-pulse' if user.camera_enabled else 'bg-red-500' }}"></span>
-                            {{ 'Enabled' if user.camera_enabled else 'Disabled' }}
+                            {{ _t('enabled') if user.camera_enabled else _t('disabled') }}
                         </span>
 
                         <form method="POST" action="{{ url_for('settings') }}">
                             <input type="hidden" name="action" value="toggle_camera">
                             <button type="submit" class="px-8 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all active:scale-95 {{ 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20' if user.camera_enabled else 'bg-indigo-600 text-white hover:bg-indigo-500' }}">
-                                {{ 'Disable Camera' if user.camera_enabled else 'Enable Camera' }}
+                                {{ _t('disable_camera') if user.camera_enabled else _t('enable_camera') }}
                             </button>
                         </form>
                     </div>
@@ -78,9 +78,9 @@
             <div class="surface_glass rounded-3xl p-8 glow-indigo">
                 <div class="flex items-center gap-3 mb-6">
                     <span class="material-symbols-outlined text-purple-400">memory</span>
-                    <h2 class="text-2xl font-bold text-white">Hardware Selection</h2>
+                    <h2 class="text-2xl font-bold text-white">{{ _t('hardware_selection') }}</h2>
                 </div>
-                <p class="text-slate-400 mb-8">Choose the source for your video feed if multiple capture devices are present.</p>
+                <p class="text-slate-400 mb-8">{{ _t('hardware_selection_desc') }}</p>
 
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -89,8 +89,8 @@
                                 <span class="material-symbols-outlined">usb</span>
                             </div>
                             <div>
-                                <h3 class="text-white font-bold">Active Interface</h3>
-                                <p class="text-xs text-slate-500">Device index binding: #{{ user.camera_index }}</p>
+                                <h3 class="text-white font-bold">{{ _t('active_interface') }}</h3>
+                                <p class="text-xs text-slate-500">{{ _t('device_index') }}: #{{ user.camera_index }}</p>
                             </div>
                         </div>
                         
@@ -98,24 +98,22 @@
                             <input type="hidden" name="action" value="change_camera">
                             <select name="camera_index" class="bg-indigo-950/40 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500 transition-all appearance-none min-w-[200px]">
                                 {% if available_cameras %}
-                                {% for cam in available_cameras %}
-                                <option value="{{ cam.index }}" {% if cam.index == user.camera_index %}selected{% endif %}>
-                                    {{ cam.name }}
-                                </option>
-                                {% endfor %}
+                                    {% for cam in available_cameras %}
+                                        <option value="{{ cam.index }}" {{ 'selected' if cam.index == user.camera_index }}>{{ _t('camera') }} #{{ cam.index }}</option>
+                                    {% endfor %}
                                 {% else %}
-                                <option value="0">No interfaces detected</option>
+                                    <option disabled>{{ _t('no_camera_found') }}</option>
                                 {% endif %}
                             </select>
-                            <button type="submit" class="px-6 py-2.5 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-sm hover:bg-white/10 transition-all">Bind Device</button>
+                            <button type="submit" class="bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-500/20 transition-all">{{ _t('update_binding') }}</button>
                         </form>
                     </div>
 
-                    <div class="pt-4 border-t border-white/5 flex justify-between items-center">
-                        <p class="text-xs text-slate-500 italic">Not seeing your camera? Try refreshing the hardware list.</p>
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <p class="text-xs text-slate-500 italic">{{ _t('refresh_hint') }}</p>
                         <form method="POST" action="{{ url_for('refresh_cameras') }}">
                             <button type="submit" class="flex items-center gap-2 text-indigo-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
-                                <span class="material-symbols-outlined text-sm">refresh</span> Refresh Hardware
+                                <span class="material-symbols-outlined text-sm">refresh</span> {{ _t('refresh_hardware') }}
                             </button>
                         </form>
                     </div>
@@ -124,7 +122,7 @@
                 {% if not available_cameras %}
                 <div class="mt-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center gap-3">
                     <span class="material-symbols-outlined">warning</span>
-                    <p class="text-xs font-bold">No capture devices detected. Please verify your camera is operational and connected.</p>
+                    <p class="text-xs font-bold">{{ _t('no_cam_detected') }}</p>
                 </div>
                 {% endif %}
             </div>
@@ -132,7 +130,7 @@
 
         <div class="mt-10">
             <a href="{{ url_for('index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors font-bold text-sm uppercase tracking-widest">
-                <span class="material-symbols-outlined">arrow_back</span> Back to Dashboard
+                <span class="material-symbols-outlined">arrow_back</span> {{ _t('back_to_dashboard') }}
             </a>
         </div>
     </main>

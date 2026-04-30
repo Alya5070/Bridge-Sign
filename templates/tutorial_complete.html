@@ -21,18 +21,18 @@
             </div>
             
             <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 mb-4 tracking-tight">
-                Congratulations!
+                {{ _t('congratulations') }}
             </h1>
             
             <p class="text-xl text-slate-300 mb-2">
-                You finished the tutorial.
+                {{ _t('tut_finished') }}
             </p>
             <p class="text-slate-400 mb-10 text-sm">
-                You are now ready to start using Bridge Sign to communicate seamlessly.
+                {{ _t('tut_ready') }}
             </p>
             
             <button onclick="finishTutorial()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2">
-                Go to Dashboard
+                {{ _t('nav_dashboard') }}
                 <span class="material-symbols-outlined">arrow_forward</span>
             </button>
         </div>

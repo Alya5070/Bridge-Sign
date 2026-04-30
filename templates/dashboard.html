@@ -80,8 +80,8 @@
 
     <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1400px] transition-all duration-300">
         <div class="mb-10">
-            <h1 class="text-4xl font-extrabold text-white mb-2">Detection Lab</h1>
-            <p class="text-lg text-slate-400">Real-time sign language inference and practice module.</p>
+            <h1 class="text-4xl font-extrabold text-white mb-2">{{ _t('dashboard_title') }}</h1>
+            <p class="text-lg text-slate-400">{{ _t('dashboard_subtitle') }}</p>
         </div>
 
         <div class="grid grid-cols-12 gap-8">
@@ -90,7 +90,7 @@
                 <!-- Inference Status -->
                 <div class="surface_glass rounded-3xl p-8 glow-indigo flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden">
                     <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Live Inference</span>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">{{ _t('live_inference') }}</span>
                     <div id="prediction" class="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-indigo-300 drop-shadow-[0_0_30px_rgba(79,70,229,0.3)]">-</div>
                     
                     <div class="w-full mt-10 space-y-4" id="confidence-bars">
@@ -101,49 +101,49 @@
                 <!-- Training Mode -->
                 <div class="surface_glass rounded-3xl p-8 glow-indigo">
                     <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-white">Training Mode</h3>
+                        <h3 class="text-xl font-bold text-white">{{ _t('training_mode') }}</h3>
                         <select id="mode-selector" onchange="switchPracticeMode(this.value)" class="bg-indigo-950/40 border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500">
-                            <option value="spelling">Spelling</option>
-                            <option value="words">Words</option>
+                            <option value="spelling">{{ _t('spelling') }}</option>
+                            <option value="words">{{ _t('words') }}</option>
                         </select>
                     </div>
 
                     <div id="mode-info" class="text-xs text-slate-400 mb-6 p-3 bg-white/5 rounded-xl border border-white/5">
-                        Currently in <strong class="text-indigo-400">Spelling</strong> Mode.
+                        {{ _t('spelling_mode_desc') }}
                     </div>
 
                     <div class="flex gap-2 mb-6">
-                        <input type="text" id="practice-input" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Enter word..." maxlength="50">
-                        <button onclick="addWord()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 rounded-xl font-bold text-sm transition-all active:scale-95">Set</button>
+                        <input type="text" id="practice-input" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="{{ _t('enter_word') }}" maxlength="50">
+                        <button onclick="addWord()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 rounded-xl font-bold text-sm transition-all active:scale-95">{{ _t('set') }}</button>
                     </div>
 
                     <div id="letter-tiles" class="flex flex-wrap gap-2 justify-center p-4 bg-black/20 rounded-2xl mb-6 min-h-[60px] items-center">
-                        <span class="text-xs text-slate-500 italic">Sequence preview</span>
+                        <span class="text-xs text-slate-500 italic">{{ _t('sequence_preview') }}</span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 mb-6">
-                        <button id="start-btn" onclick="startPractice()" disabled class="py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-bold text-sm shadow-lg transition-all active:scale-95">Initialize</button>
-                        <button onclick="resetPractice()" class="py-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 font-bold text-sm border border-white/10 transition-all active:scale-95">Abort</button>
+                        <button id="start-btn" onclick="startPractice()" disabled class="py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-bold text-sm shadow-lg transition-all active:scale-95">{{ _t('initialize') }}</button>
+                        <button onclick="resetPractice()" class="py-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 font-bold text-sm border border-white/10 transition-all active:scale-95">{{ _t('abort') }}</button>
                     </div>
 
-                    <div id="practice-status" class="text-center text-xs font-bold text-slate-500 tracking-wide uppercase">System Standby</div>
+                    <div id="practice-status" class="text-center text-xs font-bold text-slate-500 tracking-wide uppercase">{{ _t('system_standby') }}</div>
                 </div>
 
                 <!-- Feedback Section -->
                 <div class="surface_glass rounded-3xl p-8 glow-indigo">
-                    <h3 class="text-xl font-bold text-white mb-6">Community Suggestions</h3>
+                    <h3 class="text-xl font-bold text-white mb-6">{{ _t('community_suggestions') }}</h3>
                     <div class="flex gap-2 mb-4">
-                        <input type="text" id="feedback-input" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Suggest a word..." maxlength="50">
-                        <button onclick="submitWordRequest()" class="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-4 rounded-xl font-bold text-xs hover:bg-indigo-500/30 transition-all">Suggest</button>
+                        <input type="text" id="feedback-input" class="flex-1 bg-indigo-950/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500" placeholder="{{ _t('suggest_word') }}" maxlength="50">
+                        <button onclick="submitWordRequest()" class="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-4 rounded-xl font-bold text-xs hover:bg-indigo-500/30 transition-all">{{ _t('suggest') }}</button>
                     </div>
                     <div id="feedback-msg" class="text-[10px] text-center h-4 mb-4"></div>
                     
-                    <h4 class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-3">My Requests</h4>
+                    <h4 class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-3">{{ _t('my_requests') }}</h4>
                     <div id="my-requests-list" class="max-height-[120px] overflow-y-auto space-y-2 p-3 bg-black/20 rounded-xl text-xs text-slate-400 mb-4">
                         Loading...
                     </div>
                     
-                    <h4 class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-3">Recently Added</h4>
+                    <h4 class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-3">{{ _t('recently_added') }}</h4>
                     <div id="recent-requests-list" class="flex flex-wrap gap-2">
                         <!-- Badges injected by JS -->
                     </div>
@@ -155,7 +155,7 @@
                 <div class="surface_glass rounded-3xl overflow-hidden relative glow-indigo aspect-video flex items-center justify-center">
                     <div class="cam-overlay">
                         <div class="rec-indicator">
-                            <div class="rec-dot"></div> ACTIVE FEED
+                            <div class="rec-dot"></div> {{ _t('active_feed') }}
                         </div>
                         <div class="rec-indicator bg-indigo-500/50">TFv2 Model Load</div>
                     </div>
@@ -166,7 +166,7 @@
                 <div class="flex justify-between items-center">
                     <div class="flex gap-4">
                         <button onclick="startQuickTutorial()" class="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-500/20 transition-all active:scale-95">
-                            <span class="material-symbols-outlined text-lg">school</span> Tutorial
+                            <span class="material-symbols-outlined text-lg">school</span> {{ _t('nav_tutorial') }}
                         </button>
                         <form method="POST" action="{{ url_for('settings') }}" class="m-0">
                             <input type="hidden" name="action" value="toggle_camera">
@@ -178,7 +178,7 @@
                     </div>
                     <button onclick="toggleCharts()" class="flex items-center gap-2 bg-white/5 border border-white/10 text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white/10 transition-all active:scale-95">
                         <span class="material-symbols-outlined text-lg">analytics</span>
-                        <span id="chart-toggle-text">Hide Analytics</span>
+                        <span id="chart-toggle-text">{{ _t('hide_analytics') }}</span>
                     </button>
                 </div>
 
@@ -186,7 +186,7 @@
                 <div id="charts-container" class="grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-300">
                     <div class="surface_glass rounded-3xl p-6 glow-indigo">
                         <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-indigo-400">trending_up</span> Top Users
+                            <span class="material-symbols-outlined text-indigo-400">trending_up</span> {{ _t('top_users') }}
                         </h3>
                         <div class="h-[250px] relative">
                             <canvas id="top-users-chart"></canvas>
@@ -194,7 +194,7 @@
                     </div>
                     <div class="surface_glass rounded-3xl p-6 glow-indigo">
                         <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-purple-400">bar_chart</span> Most Practiced
+                            <span class="material-symbols-outlined text-purple-400">bar_chart</span> {{ _t('most_practiced') }}
                         </h3>
                         <div class="h-[250px] relative">
                             <canvas id="hand-sign-chart"></canvas>
@@ -207,19 +207,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Existing Dashboard Logic
-        let topUsersChart = null;
-        let handSignChart = null;
+        const translations = {{ translations[current_lang]|tojson }};
+        function _t(key) { return translations[key] || key; }
 
         function toggleCharts() {
             const container = document.getElementById('charts-container');
             const text = document.getElementById('chart-toggle-text');
             if (container.classList.contains('hidden')) {
                 container.classList.remove('hidden');
-                text.textContent = 'Hide Analytics';
+                text.textContent = _t('hide_analytics');
             } else {
                 container.classList.add('hidden');
-                text.textContent = 'Show Analytics';
+                text.textContent = _t('show_analytics');
             }
         }
 
@@ -250,7 +249,7 @@
                     container.innerHTML = data.requests.map(r => 
                         `<div class="flex justify-between border-b border-white/5 pb-1 mb-1">
                             <span>${r.word}</span>
-                            <span class="font-bold ${r.status === 'Added' ? 'text-green-400' : (r.status === 'Rejected' ? 'text-red-400' : 'text-yellow-400')}">${r.status}</span>
+                            <span class="font-bold ${r.status === 'Added' ? 'text-green-400' : (r.status === 'Rejected' ? 'text-red-400' : 'text-yellow-400')}">${_t(r.status)}</span>
                          </div>`
                     ).join('');
                 } else { container.innerHTML = 'No requests yet.'; }
@@ -289,9 +288,7 @@
         function switchPracticeMode(mode) {
             activeMode = mode;
             const info = document.getElementById('mode-info');
-            info.innerHTML = mode === 'spelling' 
-                ? 'Currently in <strong class="text-indigo-400">Spelling</strong> Mode. Characters are recognized one by one.' 
-                : 'Currently in <strong class="text-primary">Words</strong> Mode. Full signs are recognized at once.';
+            info.innerHTML = mode === 'spelling' ? _t('spelling_mode_desc') : _t('words_mode_desc');
             loadSystemLabels();
             resetPractice();
         }

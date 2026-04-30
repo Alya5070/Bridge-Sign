@@ -21,8 +21,8 @@
 
     <main id="main-content" class="lg:ml-64 pt-28 pb-12 px-8 max-w-[1000px] transition-all duration-300 mx-auto">
         <div class="mb-10">
-            <h1 class="text-4xl font-extrabold text-white mb-2">My Profile</h1>
-            <p class="text-lg text-slate-400">Manage your account credentials and security settings.</p>
+            <h1 class="text-4xl font-extrabold text-white mb-2">{{ _t('profile_title') }}</h1>
+            <p class="text-lg text-slate-400">{{ _t('profile_subtitle') }}</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -31,7 +31,7 @@
         <div class="mb-6 p-4 rounded-2xl border {{ 'bg-green-500/10 border-green-500/20 text-green-400' if category == 'success' else 'bg-red-500/10 border-red-500/20 text-red-400' }}">
             <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined">{{ 'check_circle' if category == 'success' else 'error' }}</span>
-                <span class="font-bold text-sm">{{ message }}</span>
+                <span class="font-bold text-sm">{{ _t(message) }}</span>
             </div>
         </div>
         {% endfor %}
@@ -45,69 +45,69 @@
                 </div>
                 <div>
                     <h2 class="text-2xl font-black text-white leading-none">{{ user.username }}</h2>
-                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-2">User Tag: #{{ user.id }}</p>
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-2">{{ _t('user_tag') }}: #{{ user.id }}</p>
                 </div>
             </div>
 
             <form method="POST" action="{{ url_for('profile') }}" class="p-8 space-y-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-2">
-                        <label for="username" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
+                        <label for="username" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('username') }}</label>
                         <input type="text" id="username" name="username" value="{{ user.username }}" required class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                     </div>
 
                     <div class="space-y-2">
-                        <label for="security_question" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Security Question</label>
+                        <label for="security_question" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('security_question') }}</label>
                         <select id="security_question" name="security_question" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none">
-                            <option value="" {% if not user.security_question %}selected{% endif %} disabled>Select a security question</option>
-                            <option value="What was your first pet's name?" {% if user.security_question == "What was your first pet's name?" %}selected{% endif %}>What was your first pet's name?</option>
-                            <option value="What is your mother's maiden name?" {% if user.security_question == "What is your mother's maiden name?" %}selected{% endif %}>What is your mother's maiden name?</option>
-                            <option value="What was the name of your first school?" {% if user.security_question == "What was the name of your first school?" %}selected{% endif %}>What was the name of your first school?</option>
-                            <option value="In what city were you born?" {% if user.security_question == "In what city were you born?" %}selected{% endif %}>In what city were you born?</option>
-                            <option value="What is your favorite book?" {% if user.security_question == "What is your favorite book?" %}selected{% endif %}>What is your favorite book?</option>
+                            <option value="" {% if not user.security_question %}selected{% endif %} disabled>{{ _t('select_security_q') }}</option>
+                            <option value="What was your first pet's name?" {% if user.security_question == "What was your first pet's name?" %}selected{% endif %}>{{ _t('q_pet') }}</option>
+                            <option value="What is your mother's maiden name?" {% if user.security_question == "What is your mother's maiden name?" %}selected{% endif %}>{{ _t('q_maiden') }}</option>
+                            <option value="What was the name of your first school?" {% if user.security_question == "What was the name of your first school?" %}selected{% endif %}>{{ _t('q_school') }}</option>
+                            <option value="In what city were you born?" {% if user.security_question == "In what city were you born?" %}selected{% endif %}>{{ _t('q_city') }}</option>
+                            <option value="What is your favorite book?" {% if user.security_question == "What is your favorite book?" %}selected{% endif %}>{{ _t('q_book') }}</option>
                         </select>
                     </div>
 
                     <div class="space-y-2">
-                        <label for="security_answer" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Security Answer</label>
+                        <label for="security_answer" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('security_answer') }}</label>
                         <input type="text" id="security_answer" name="security_answer" placeholder="••••••••" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                        <p class="text-[10px] text-slate-500 px-1">Leave blank to keep current answer.</p>
+                        <p class="text-[10px] text-slate-500 px-1">{{ _t('leave_blank_keep') }}</p>
                     </div>
                 </div>
 
                 <div class="pt-8 border-t border-white/10">
                     <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-indigo-400">lock</span> Change Password
+                        <span class="material-symbols-outlined text-indigo-400">lock</span> {{ _t('change_password') }}
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="space-y-2 md:col-span-2">
-                            <label for="current_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Current Password</label>
-                            <input type="password" id="current_password" name="current_password" required class="w-full bg-indigo-950/40 border border-indigo-500/20 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Enter current password to save changes">
-                            <p class="text-[10px] text-red-400 px-1 font-bold">Required to confirm any account modifications.</p>
+                            <label for="current_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('current_password') }}</label>
+                            <input type="password" id="current_password" name="current_password" required class="w-full bg-indigo-950/40 border border-indigo-500/20 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="{{ _t('enter_current_pwd') }}">
+                            <p class="text-[10px] text-red-400 px-1 font-bold">{{ _t('pwd_required_confirm') }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <label for="new_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">New Password</label>
-                            <input type="password" id="new_password" name="new_password" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="New password">
+                            <label for="new_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('new_password') }}</label>
+                            <input type="password" id="new_password" name="new_password" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="{{ _t('new_password') }}">
                         </div>
 
                         <div class="space-y-2">
-                            <label for="confirm_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Confirm New Password</label>
-                            <input type="password" id="confirm_password" name="confirm_password" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Repeat new password">
+                            <label for="confirm_password" class="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('confirm_new_password') }}</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="w-full bg-indigo-950/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="{{ _t('confirm_new_password') }}">
                         </div>
                     </div>
                 </div>
 
                 <div class="flex justify-end pt-4">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95">Update Profile</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95">{{ _t('update_profile') }}</button>
                 </div>
             </form>
         </div>
 
         <div class="mt-8">
             <a href="{{ url_for('index') }}" class="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors font-bold text-sm uppercase tracking-widest">
-                <span class="material-symbols-outlined">arrow_back</span> Back to Dashboard
+                <span class="material-symbols-outlined">arrow_back</span> {{ _t('back_to_dashboard') }}
             </a>
         </div>
     </main>

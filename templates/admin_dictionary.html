@@ -24,13 +24,13 @@
         <!-- Header Section -->
         <header class="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
-                <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">Sign Dictionary</h1>
-                <p class="text-lg text-slate-400 max-w-2xl">Refine, expand, and audit the visual vocabulary of Bridge Sign. Manage entries for real-time AI recognition.</p>
+                <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">{{ _t('dict_title') }}</h1>
+                <p class="text-lg text-slate-400 max-w-2xl">{{ _t('dict_subtitle') }}</p>
             </div>
             <div class="flex gap-4">
                 <a href="{{ url_for('admin_dictionary_export') }}" class="bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all duration-300 text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 active:scale-95">
                     <span class="material-symbols-outlined text-lg">publish</span>
-                    Export CSV
+                    {{ _t('export_csv') }}
                 </a>
             </div>
         </header>
@@ -41,7 +41,7 @@
                 <span class="material-symbols-outlined text-indigo-400">info</span>
             </div>
             <p class="text-sm text-slate-400 leading-relaxed">
-                <span class="text-indigo-400 font-bold">Pro-tip:</span> Updates to the Text-to-Sign dictionary are immediate. New AI recognition labels require data collection in the Trainer Module. All words are auto-lowercased for system consistency.
+                <span class="text-indigo-400 font-bold">{{ _t('pro_tip_label') }}:</span> {{ _t('pro_tip') }}
             </p>
         </div>
 
@@ -50,7 +50,7 @@
                 {% for category, message in messages %}
                     <div class="mb-6 p-4 rounded-2xl border {% if category == 'success' %}bg-green-500/10 border-green-500/20 text-green-400{% else %}bg-red-500/10 border-red-500/20 text-red-400{% endif %} flex items-center gap-3">
                         <span class="material-symbols-outlined">{% if category == 'success' %}check_circle{% else %}error{% endif %}</span>
-                        <span class="font-bold text-xs">{{ message }}</span>
+                        <span class="font-bold text-xs">{{ _t(message) }}</span>
                     </div>
                 {% endfor %}
             {% endif %}
@@ -64,20 +64,20 @@
                     <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center">
                         <span class="material-symbols-outlined text-indigo-400">add_circle</span>
                     </div>
-                    <h3 class="text-2xl font-black text-white tracking-tight">Add Single Entry</h3>
+                    <h3 class="text-2xl font-black text-white tracking-tight">{{ _t('add_single') }}</h3>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
                     <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Word or Phrase</label>
-                        <input id="new_phrase" class="w-full bg-indigo-950/40 border border-white/10 focus:ring-2 focus:ring-indigo-500 rounded-2xl px-5 py-4 text-white transition-all outline-none placeholder:text-slate-700" placeholder="e.g. 'hello'" type="text"/>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('word_phrase') }}</label>
+                        <input id="new_phrase" class="w-full bg-indigo-950/40 border border-white/10 focus:ring-2 focus:ring-indigo-500 rounded-2xl px-5 py-4 text-white transition-all outline-none placeholder:text-slate-700" placeholder="{{ _t('eg_hello') }}" type="text"/>
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">YouTube ID</label>
-                        <input id="new_url" class="w-full bg-indigo-950/40 border border-white/10 focus:ring-2 focus:ring-indigo-500 rounded-2xl px-5 py-4 text-white transition-all outline-none placeholder:text-slate-700" placeholder="Video ID or full link" type="text"/>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{{ _t('youtube_id') }}</label>
+                        <input id="new_url" class="w-full bg-indigo-950/40 border border-white/10 focus:ring-2 focus:ring-indigo-500 rounded-2xl px-5 py-4 text-white transition-all outline-none placeholder:text-slate-700" placeholder="{{ _t('video_id_link') }}" type="text"/>
                     </div>
                     <div class="sm:col-span-2 flex justify-end">
                         <button onclick="addSingleEntry()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-12 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-                            Submit Entry
+                            {{ _t('submit_entry') }}
                             <span class="material-symbols-outlined text-lg">check_circle</span>
                         </button>
                     </div>
@@ -90,13 +90,13 @@
                     <div class="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
                         <span class="material-symbols-outlined text-purple-400">cloud_upload</span>
                     </div>
-                    <h3 class="text-2xl font-black text-white tracking-tight">Bulk Import</h3>
+                    <h3 class="text-2xl font-black text-white tracking-tight">{{ _t('bulk_import') }}</h3>
                 </div>
                 <div class="flex-1 flex flex-col gap-4">
-                    <p class="text-xs text-slate-500 leading-relaxed px-1">Paste multiple entries (one per line):<br><span class="font-mono text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">word, https://youtu.be/...</span></p>
+                    <p class="text-xs text-slate-500 leading-relaxed px-1">{{ _t('paste_multiple') }}<br><span class="font-mono text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">word, https://youtu.be/...</span></p>
                     <textarea id="bulk_input" rows="5" class="w-full flex-1 bg-indigo-950/40 border border-white/10 focus:ring-2 focus:ring-indigo-500 rounded-2xl px-5 py-4 text-white text-sm transition-all outline-none resize-none placeholder:text-slate-700" placeholder="hello, url...&#10;thank you, url..."></textarea>
                     <button onclick="addBulkEntries()" class="w-full bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-300 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95">
-                        Import All Entries
+                        {{ _t('import_all') }}
                     </button>
                 </div>
             </section>

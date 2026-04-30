@@ -9,19 +9,21 @@
             <a href="{{ url_for('index') }}" class="text-2xl font-black tracking-tighter text-white drop-shadow-[0_0_8px_rgba(79,70,229,0.6)]">Bridge Sign</a>
             
             <div class="hidden md:flex items-center gap-6">
-                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'index' }}" href="{{ url_for('index') }}">Dashboard</a>
-                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'text_to_sign' }}" href="{{ url_for('text_to_sign') }}">Text-to-Sign</a>
-                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'quiz' }}" href="{{ url_for('quiz') }}">Quiz</a>
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'index' }}" href="{{ url_for('index') }}">{{ _t('nav_dashboard') }}</a>
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'text_to_sign' }}" href="{{ url_for('text_to_sign') }}">{{ _t('nav_text_to_sign') }}</a>
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint == 'quiz' }}" href="{{ url_for('quiz') }}">{{ _t('nav_quiz') }}</a>
                 {% if is_admin %}
-                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint in ['admin_dashboard', 'admin_dictionary'] }}" href="{{ url_for('admin_dashboard') }}">Admin</a>
+                <a class="text-slate-400 hover:text-white transition-colors duration-300 font-inter text-sm font-medium tracking-wide active:scale-95 cursor-pointer {{ 'text-white border-b-2 border-indigo-500 pb-1' if request.endpoint in ['admin_dashboard', 'admin_dictionary'] }}" href="{{ url_for('admin_dashboard') }}">{{ _t('nav_admin') }}</a>
                 {% endif %}
             </div>
         </div>
         
         <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2 mr-4 text-xs font-semibold text-slate-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hidden sm:flex">
+
+
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hidden sm:flex">
                 <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                System Online
+                {{ _t('system_online') }}
             </div>
             
             <div class="flex items-center gap-3 bg-white/5 pl-4 pr-1 py-1 rounded-full border border-white/10">
