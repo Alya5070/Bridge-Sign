@@ -1,4 +1,4 @@
-# 🖐️ Hand Sign Detection & Translation System
+# Bridge Sign - Final Year Project (FYP)
 
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.0+-000000?style=flat&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
