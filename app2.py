@@ -200,6 +200,17 @@ class WordRequest(db.Model):
     
     user = db.relationship('User', backref=db.backref('requests', lazy=True))
 
+class DictionaryEntry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    word = db.Column(db.String(100), unique=True, nullable=False)
+    youtube_id = db.Column(db.String(50), nullable=False)
+    added_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    suggested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    added_by = db.relationship('User', foreign_keys=[added_by_id], backref=db.backref('added_signs', lazy=True))
+    suggested_by = db.relationship('User', foreign_keys=[suggested_by_id], backref=db.backref('suggested_signs', lazy=True))
+
 with app.app_context():
     db.create_all()
     # Schema Migration for newly added columns
@@ -227,6 +238,27 @@ with app.app_context():
     elif not admin_user.is_admin:
         admin_user.is_admin = True
         db.session.commit()
+
+    # One-time migration from sign_dictionary.json to DB
+    if DictionaryEntry.query.count() == 0:
+        try:
+            json_dict_path = os.path.join(base_dir, 'sign_dictionary.json')
+            if os.path.exists(json_dict_path):
+                with open(json_dict_path, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f)
+                admin_id = admin_user.id if admin_user else None
+                for w, y_id in json_data.items():
+                    entry = DictionaryEntry(
+                        word=w.strip().lower(),
+                        youtube_id=y_id,
+                        added_by_id=admin_id
+                    )
+                    db.session.add(entry)
+                db.session.commit()
+                print("[MIGRATION] Migrated sign_dictionary.json to SQL DictionaryEntry table successfully!")
+        except Exception as e:
+            db.session.rollback()
+            print(f"[MIGRATION ERROR] Failed migrating JSON: {e}")
 
 
 # Initialize variables and models
@@ -1127,12 +1159,14 @@ def tutorial_learn(level):
     else:
         return redirect(url_for('tutorial'))
 
+    dictionary = load_sign_dictionary()
     return render_template('tutorial_learning.html', 
                            username=session['username'], 
                            camera_active=camera_active, 
                            is_admin=user.is_admin,
                            level=level,
-                           sequence=sequence)
+                           sequence=sequence,
+                           sign_dictionary=dictionary)
 
 @app.route('/tutorial/success')
 @login_required
@@ -1766,19 +1800,43 @@ def admin_dashboard():
 
 def load_sign_dictionary():
     try:
-        with open(os.path.join(base_dir, 'sign_dictionary.json'), 'r') as f:
-            return json.load(f)
+        entries = DictionaryEntry.query.all()
+        return {entry.word: entry.youtube_id for entry in entries}
     except Exception as e:
-        print(f"Error loading sign dictionary: {e}")
+        print(f"Error loading sign dictionary from DB: {e}")
         return {}
 
 def save_sign_dictionary(data):
     try:
-        with open(os.path.join(base_dir, 'sign_dictionary.json'), 'w') as f:
-            json.dump(data, f, indent=4)
+        admin_user = User.query.filter_by(username='Admin').first()
+        admin_id = admin_user.id if admin_user else None
+        current_entries = {entry.word: entry for entry in DictionaryEntry.query.all()}
+        
+        # Add or update
+        for w, y_id in data.items():
+            normalized_word = w.strip().lower()
+            if normalized_word in current_entries:
+                entry = current_entries[normalized_word]
+                if entry.youtube_id != y_id:
+                    entry.youtube_id = y_id
+            else:
+                entry = DictionaryEntry(
+                    word=normalized_word,
+                    youtube_id=y_id,
+                    added_by_id=admin_id
+                )
+                db.session.add(entry)
+                
+        # Remove deleted ones
+        for word, entry in current_entries.items():
+            if word not in data:
+                db.session.delete(entry)
+                
+        db.session.commit()
         return True
     except Exception as e:
-        print(f"Error saving sign dictionary: {e}")
+        db.session.rollback()
+        print(f"Error saving sign dictionary to DB: {e}")
         return False
 
 def get_youtube_id(url):
@@ -1906,9 +1964,9 @@ def admin_dictionary_export():
 @app.route('/admin/dictionary', methods=['GET'])
 @admin_required
 def admin_dictionary():
-    dictionary = load_sign_dictionary()
+    entries = DictionaryEntry.query.order_by(DictionaryEntry.word).all()
     pending_requests = WordRequest.query.filter_by(status='Pending', suggestion_type='text_to_sign').order_by(WordRequest.timestamp.desc()).all()
-    return render_template('admin_dictionary.html', username=session.get('username', ''), is_admin=True, dictionary=dictionary, pending_requests=pending_requests)
+    return render_template('admin_dictionary.html', username=session.get('username', ''), is_admin=True, entries=entries, pending_requests=pending_requests)
 
 @app.route('/admin/dictionary/add', methods=['POST'])
 @admin_required
@@ -1928,12 +1986,27 @@ def admin_dictionary_add():
         else:
             return jsonify({'success': False, 'error': 'Invalid YouTube Link or ID.'})
         
-    dictionary = load_sign_dictionary()
-    dictionary[phrase] = yt_id
+    # Check if exists
+    entry = DictionaryEntry.query.filter_by(word=phrase).first()
+    admin_id = session.get('user_id')
     
-    if save_sign_dictionary(dictionary):
+    if entry:
+        entry.youtube_id = yt_id
+        entry.added_by_id = admin_id
+    else:
+        entry = DictionaryEntry(
+            word=phrase,
+            youtube_id=yt_id,
+            added_by_id=admin_id
+        )
+        db.session.add(entry)
+        
+    try:
+        db.session.commit()
         return jsonify({'success': True, 'message': 'Word added to dictionary successfully!'})
-    return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Failed to save dictionary: {e}'})
 
 @app.route('/admin/dictionary/bulk_add', methods=['POST'])
 @admin_required
@@ -1944,7 +2017,7 @@ def admin_dictionary_bulk_add():
     if not entries:
         return jsonify({'success': False, 'error': 'No entries provided.'})
         
-    dictionary = load_sign_dictionary()
+    admin_id = session.get('user_id')
     added_count = 0
     errors = []
     
@@ -1963,13 +2036,26 @@ def admin_dictionary_bulk_add():
                  errors.append(f"Invalid URL for '{phrase}'")
                  continue
                  
-        dictionary[phrase] = yt_id
+        existing = DictionaryEntry.query.filter_by(word=phrase).first()
+        if existing:
+            existing.youtube_id = yt_id
+            existing.added_by_id = admin_id
+        else:
+            new_entry = DictionaryEntry(
+                word=phrase,
+                youtube_id=yt_id,
+                added_by_id=admin_id
+            )
+            db.session.add(new_entry)
         added_count += 1
         
     if added_count > 0:
-        if save_sign_dictionary(dictionary):
+        try:
+            db.session.commit()
             return jsonify({'success': True, 'message': f'Successfully imported {added_count} words.', 'errors': errors})
-        return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': f'Failed to save dictionary: {e}'})
     return jsonify({'success': False, 'error': 'No valid entries to add.', 'errors': errors})
 
 @app.route('/admin/dictionary/edit', methods=['POST'])
@@ -1990,16 +2076,25 @@ def admin_dictionary_edit():
         else:
             return jsonify({'success': False, 'error': 'Invalid YouTube Link or ID.'})
             
-    dictionary = load_sign_dictionary()
-    
-    if old_phrase in dictionary:
+    entry = DictionaryEntry.query.filter_by(word=old_phrase).first()
+    if entry:
+        admin_id = session.get('user_id')
         if old_phrase != new_phrase:
-            del dictionary[old_phrase]
-        dictionary[new_phrase] = yt_id
+            # Ensure new phrase doesn't already exist
+            existing_new = DictionaryEntry.query.filter_by(word=new_phrase).first()
+            if existing_new:
+                db.session.delete(entry) # Merge/replace
+            else:
+                entry.word = new_phrase
+        entry.youtube_id = yt_id
+        entry.added_by_id = admin_id
         
-        if save_sign_dictionary(dictionary):
+        try:
+            db.session.commit()
             return jsonify({'success': True, 'message': 'Entry updated successfully!'})
-        return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': f'Failed to save updates: {e}'})
         
     return jsonify({'success': False, 'error': 'Original phrase not found.'})
 
@@ -2012,12 +2107,15 @@ def admin_dictionary_delete():
     if not phrase:
         return jsonify({'success': False, 'error': 'Phrase is required.'})
         
-    dictionary = load_sign_dictionary()
-    if phrase in dictionary:
-        del dictionary[phrase]
-        if save_sign_dictionary(dictionary):
+    entry = DictionaryEntry.query.filter_by(word=phrase).first()
+    if entry:
+        db.session.delete(entry)
+        try:
+            db.session.commit()
             return jsonify({'success': True, 'message': 'Entry deleted globally.'})
-        return jsonify({'success': False, 'error': 'Failed to save dictionary to file.'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': f'Failed to delete: {e}'})
         
     return jsonify({'success': False, 'error': 'Phrase not found.'})
 
@@ -2080,15 +2178,32 @@ def update_word_request():
              else:
                  return jsonify({'success': False, 'error': 'Invalid YouTube Link or ID.'})
                  
-        dictionary = load_sign_dictionary()
-        dictionary[word_req.requested_word.lower()] = yt_id
-        if not save_sign_dictionary(dictionary):
-             return jsonify({'success': False, 'error': 'Failed to save to dictionary file.'})
+        # Check if already exists in dictionary
+        normalized_word = word_req.requested_word.strip().lower()
+        entry = DictionaryEntry.query.filter_by(word=normalized_word).first()
+        admin_id = session.get('user_id')
+        suggested_user_id = word_req.user_id
+        
+        if entry:
+            entry.youtube_id = yt_id
+            entry.added_by_id = admin_id
+            entry.suggested_by_id = suggested_user_id
+        else:
+            entry = DictionaryEntry(
+                word=normalized_word,
+                youtube_id=yt_id,
+                added_by_id=admin_id,
+                suggested_by_id=suggested_user_id
+            )
+            db.session.add(entry)
 
     word_req.status = new_status
-    db.session.commit()
-    
-    return jsonify({'success': True})
+    try:
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Failed to update request: {e}'})
 
 @app.route('/my_requests', methods=['GET'])
 @login_required

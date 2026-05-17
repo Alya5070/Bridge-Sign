@@ -125,6 +125,17 @@
                     </div>
                 </div>
 
+                <!-- Dynamic YouTube Video Demonstration -->
+                <div id="youtube-demo-container" class="surface_glass rounded-3xl overflow-hidden p-6 border border-white/10 hidden flex-col glow-indigo">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 justify-center">
+                        <span class="material-symbols-outlined text-indigo-400 text-sm">play_circle</span>
+                        {{ _t('video_demonstration') }}
+                    </h3>
+                    <div class="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                        <iframe id="tutorial-yt-iframe" src="" class="w-full h-full" allowfullscreen></iframe>
+                    </div>
+                </div>
+
                 <!-- Visual Guide Toggle (Only for Basics) -->
                 {% if level == 'basics' %}
                 <div class="surface_glass rounded-3xl overflow-hidden p-6 border border-white/10">
@@ -187,6 +198,7 @@
         function _t(key) { return translations[key] || key; }
 
         const targetSequence = {{ sequence|tojson }};
+        const signDictionary = {{ sign_dictionary|tojson if sign_dictionary else '{}' }};
         const level = "{{ level }}";
         let currentIndex = 0;
         let currentSubIndex = 0; // For tracking words within a sentence
@@ -241,6 +253,7 @@
         function updateUI() {
             if (currentIndex < targetSequence.length) {
                 const target = targetSequence[currentIndex];
+                let activeTargetKey = "";
                 
                 // Handle complex sentences by splitting into tiles
                 if (target.includes(' ')) {
@@ -256,6 +269,7 @@
                     
                     const currentWord = targetWords[currentSubIndex];
                     targetDescEl.textContent = `${_t('perform_word')}: ${currentWord}`;
+                    activeTargetKey = currentWord.toLowerCase();
                 } else {
                     targetWords = [];
                     targetLetterEl.classList.remove('hidden');
@@ -263,6 +277,29 @@
                     targetDescEl.textContent = descriptions[target] || _t('perform_sign') + " " + target;
                     tileContainer.innerHTML = '';
                     tileContainer.appendChild(targetLetterEl);
+                    activeTargetKey = target.toLowerCase();
+                }
+                
+                // Dynamic YouTube Video Demo update
+                const ytVideoId = signDictionary[activeTargetKey];
+                const ytDemoContainer = document.getElementById('youtube-demo-container');
+                const ytIframe = document.getElementById('tutorial-yt-iframe');
+                
+                if (ytDemoContainer && ytIframe) {
+                    if (ytVideoId) {
+                        const targetUrl = `https://www.youtube.com/embed/${ytVideoId}?autoplay=0&rel=0&playsinline=1`;
+                        if (ytIframe.dataset.videoId !== ytVideoId) {
+                            ytIframe.src = targetUrl;
+                            ytIframe.dataset.videoId = ytVideoId;
+                        }
+                        ytDemoContainer.classList.remove('hidden');
+                        ytDemoContainer.classList.add('flex');
+                    } else {
+                        ytIframe.src = "";
+                        ytIframe.dataset.videoId = "";
+                        ytDemoContainer.classList.add('hidden');
+                        ytDemoContainer.classList.remove('flex');
+                    }
                 }
                 
                 if (!hintContent.classList.contains('hidden')) updateHintText();
@@ -275,6 +312,13 @@
                 targetDescEl.textContent = _t('level_complete_redirecting');
                 progressBar.style.width = '100%';
                 progressText.textContent = '100%';
+                
+                // Hide video demo upon completion
+                const ytDemoContainer = document.getElementById('youtube-demo-container');
+                if (ytDemoContainer) {
+                    ytDemoContainer.classList.add('hidden');
+                    ytDemoContainer.classList.remove('flex');
+                }
             }
         }
 
