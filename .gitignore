@@ -3,3 +3,5 @@ __pycache__/migrate_sqlite_to_supabase.cpython-311.pyc
 convert_model_to_compat.py
 migrate_sqlite_to_supabase.py
 run_migration.bat
+Model/Test/dynamic_model.h5
+dataset/asl_mediapipe_keypoints_dataset.csv
