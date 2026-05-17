@@ -149,11 +149,6 @@
 
     <script>
         const descriptions = {
-            "A": "Ball up your hand into a fist with your thumb pressing the side of your index finger.",
-            "B": "Hold up your hand as if you're waving, press your fingers together, and fold your thumb across your palm.",
-            "C": "Curve your fingers and thumb to form the shape of a \"C.\"",
-            "D": "Point your index finger straight up and touch the tips of your other three fingers to your thumb.",
-        const descriptions = {
             "A": "{{ _t('desc_A') }}",
             "B": "{{ _t('desc_B') }}",
             "C": "{{ _t('desc_C') }}",
@@ -286,7 +281,7 @@
         async function pollPrediction() {
             if (currentIndex >= targetSequence.length) return;
             try {
-                const response = await fetch('/get_prediction');
+                const response = await fetch(`/get_prediction?t=${new Date().getTime()}`);
                 const data = await response.json();
                 
                 let currentTarget = "";
@@ -296,10 +291,10 @@
                     currentTarget = targetSequence[currentIndex].toUpperCase();
                 }
                 
-                // Allow matches from either static or dynamic predictions
                 let isMatch = false;
-                if (data.prediction && data.prediction.toUpperCase() === currentTarget) isMatch = true;
-                if (data.dynamic_prediction && data.dynamic_prediction.toUpperCase() === currentTarget) isMatch = true;
+                const p = (data.prediction || data.dynamic_prediction || "").trim();
+                
+                if (p && p.toUpperCase() === currentTarget) isMatch = true;
 
                 if (isMatch) {
                     consecutiveMatches++;
@@ -323,8 +318,10 @@
                             return;
                         }
                     }
+                } else if (p) {
+                    consecutiveMatches = Math.max(0, consecutiveMatches - 0.5);
                 } else {
-                    consecutiveMatches = Math.max(0, consecutiveMatches - 1);
+                    consecutiveMatches = Math.max(0, consecutiveMatches - 0.1);
                 }
                 updateUI();
             } catch (error) { console.error('Error fetching prediction:', error); }

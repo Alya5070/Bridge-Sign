@@ -252,10 +252,12 @@
             document.getElementById('setupView').classList.add('hidden');
             document.getElementById('quizView').classList.remove('hidden');
             nextQuestion();
+            pollPredictions();
         }
 
         function endQuiz() {
             isQuizRunning = false;
+            clearTimeout(pollTimer);
             clearInterval(timerInterval);
             document.getElementById('setupView').classList.remove('hidden');
             document.getElementById('quizView').classList.add('hidden');
@@ -269,6 +271,7 @@
         function nextQuestion() {
             if(currentIndex >= quizQueue.length) { finishQuiz(); return; }
             
+            isTransitioning = false;
             document.getElementById('quizTarget').textContent = quizQueue[currentIndex];
             document.getElementById('progressStat').textContent = `${currentIndex + 1} / ${quizQueue.length}`;
             
@@ -327,34 +330,53 @@
             overlay.classList.remove('pointer-events-none');
         }
 
-        // Poll predictions during quiz
-        setInterval(async () => {
-            if(!isQuizRunning) return;
-            try {
-                const res = await fetch('/get_prediction');
-                const data = await res.json();
-                const p = data.prediction;
-                document.getElementById('currentPredStat').textContent = p || "-";
+        let isTransitioning = false;
+        let pollTimer = null;
 
-                if(p && p.toUpperCase() === quizQueue[currentIndex].toUpperCase()) {
-                    currentLockTicks++;
-                    lockPct = (currentLockTicks / requiredLockTicks) * 100;
-                    updateLockUI();
-                    
-                    if(currentLockTicks >= requiredLockTicks) {
-                        clearInterval(timerInterval);
-                        correctCount++;
-                        showFeedback(true);
-                        setTimeout(nextQuestion, 1500);
-                        currentIndex++;
+        async function pollPredictions() {
+            if(!isQuizRunning) return;
+            
+            try {
+                if(!isTransitioning) {
+                    const res = await fetch(`/get_prediction?t=${new Date().getTime()}`);
+                    const data = await res.json();
+                    const p = (data.prediction || data.dynamic_prediction || "").trim();
+                    document.getElementById('currentPredStat').textContent = p || "-";
+
+                    // Ensure we have a valid target
+                    if(currentIndex < quizQueue.length) {
+                        const target = quizQueue[currentIndex].toUpperCase();
+                        
+                        if(p && p.toUpperCase() === target) {
+                            currentLockTicks++;
+                            lockPct = (currentLockTicks / requiredLockTicks) * 100;
+                            updateLockUI();
+                            
+                            if(currentLockTicks >= requiredLockTicks) {
+                                isTransitioning = true;
+                                clearInterval(timerInterval);
+                                correctCount++;
+                                showFeedback(true);
+                                currentIndex++;
+                                setTimeout(nextQuestion, 1500);
+                            }
+                        } else if(p) {
+                            currentLockTicks = Math.max(0, currentLockTicks - 0.5);
+                            lockPct = (currentLockTicks / requiredLockTicks) * 100;
+                            updateLockUI();
+                        } else {
+                            currentLockTicks = Math.max(0, currentLockTicks - 0.1);
+                            lockPct = (currentLockTicks / requiredLockTicks) * 100;
+                            updateLockUI();
+                        }
                     }
-                } else {
-                    currentLockTicks = Math.max(0, currentLockTicks - 0.5);
-                    lockPct = (currentLockTicks / requiredLockTicks) * 100;
-                    updateLockUI();
                 }
             } catch(e) {}
-        }, 200);
+            
+            if(isQuizRunning) {
+                pollTimer = setTimeout(pollPredictions, 200);
+            }
+        }
 
         window.addEventListener('DOMContentLoaded', fetchLabels);
     </script>

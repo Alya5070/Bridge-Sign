@@ -247,10 +247,10 @@ def load_model(mode):
     # We natively bridge the legacy route to our active custom model now
     success = load_custom_model()
     if success:
-        print(f"✅ Successfully piped {mode} routing to MediaPipe new_custom_model.h5")
+        print(f"[SUCCESS] Successfully piped {mode} routing to MediaPipe new_custom_model.h5")
         return True
     else:
-        print(f"❌ Error loading {mode} model! Custom model not found.")
+        print(f"[ERROR] Error loading {mode} model! Custom model not found.")
         return False
 
 
@@ -557,15 +557,24 @@ def generate_frames():
                         input_tensor = tf.convert_to_tensor([combined_126_landmarks])
                         prediction = custom_model(input_tensor, training=False).numpy()
                         class_id = np.argmax(prediction)
-                        if prediction[0][class_id] > 0.5:
-                            cand_label = custom_labels[class_id]
+                        conf = float(prediction[0][class_id])
+                        cand_label = custom_labels[class_id] if class_id < len(custom_labels) else "N/A"
+                        
+                        # Populate the global confidence_scores so /get_prediction returns it
+                        confidence_scores = [float(score) for score in prediction[0]]
+                        
+                        # Log to console so user can see live model prediction outputs and scores
+                        print(f"[PREDICTION] Mode: {active_mode} | Class ID: {class_id} | Label: '{cand_label}' | Conf: {conf:.4f}")
+                        
+                        if conf > 0.5:
                             if active_mode == 'spelling':
                                 if len(cand_label) == 1: static_pred = cand_label
                             elif active_mode == 'words':
                                 if len(cand_label) > 1: static_pred = cand_label
                             else:
                                 static_pred = cand_label
-                    except Exception:
+                    except Exception as e:
+                        print(f"[PREDICTION ERROR] Exception during model inference: {str(e)}")
                         static_pred = "Error"
                 
                 if dynamic_model_predict is not None and len(dynamic_labels) > 0 and active_mode != 'spelling':
@@ -712,6 +721,11 @@ def generate_frames():
                                 dyn_pred_text = dynamic_labels[dyn_class_id]
                         except Exception:
                             pass
+                            
+                    # Update global prediction states for /get_prediction to read
+                    current_prediction = f"{pred_label}"
+                    current_dynamic_prediction = dyn_pred_text
+                    
                 # Overlay UI instructions over the training feed
                 if is_recording:
                     cv2.putText(imgOutput, f"Recording: {frames_recorded}/{target_frames}", (10, 50), 
@@ -1091,7 +1105,7 @@ def tutorial():
 @app.route('/tutorial/learn/<level>')
 @login_required
 def tutorial_learn(level):
-    global camera_active, current_camera_index
+    global camera_active, current_camera_index, camera_mode
     user = db.session.get(User, session['user_id'])
     
     if user is None:
@@ -1101,6 +1115,7 @@ def tutorial_learn(level):
 
     camera_active = user.camera_enabled
     current_camera_index = user.camera_index
+    camera_mode = 'translation'
     
     # Define sequences based on level
     if level == 'basics':
@@ -1157,6 +1172,7 @@ def complete_tutorial():
 
 
 @app.route('/video_feed')
+@limiter.exempt
 @login_required
 def video_feed():
     return Response(generate_frames(),
@@ -1164,6 +1180,7 @@ def video_feed():
 
 
 @app.route('/get_prediction')
+@limiter.exempt
 @login_required
 def get_prediction():
     global current_letter_index, practice_active
@@ -1176,6 +1193,10 @@ def get_prediction():
         expected_letter = practice_word[current_letter_index].upper()
         if current_prediction and current_prediction.upper() == expected_letter:
             should_advance = True
+
+    # DEBUG LOG
+    if current_prediction or current_dynamic_prediction:
+        print(f"[GET_PREDICTION] Mode: {active_mode} | Sending static: '{current_prediction}' | dynamic: '{current_dynamic_prediction}'")
 
     return jsonify({
         'prediction': current_prediction,
@@ -1268,6 +1289,7 @@ def advance_letter():
 
 
 @app.route('/get_chart_data')
+@limiter.exempt
 @login_required
 def get_chart_data():
     # Top Users: sort users by ID or some time metric if available (for now mock time with user.id * 120)
